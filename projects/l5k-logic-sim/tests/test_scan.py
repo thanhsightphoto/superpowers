@@ -27,3 +27,18 @@ def test_split_top_level_ignores_bracketed_commas():
 
 def test_split_top_level_single_piece():
     assert split_top_level("(Value1 - Value2) * 60000/Period") == ["(Value1 - Value2) * 60000/Period"]
+
+
+def test_find_matching_raises_on_mismatched_closer():
+    with pytest.raises(ValueError):
+        find_matching("(a]", 0)
+
+
+def test_find_matching_raises_on_non_opener():
+    with pytest.raises(ValueError):
+        find_matching("abc", 1)
+
+
+def test_split_top_level_raises_on_orphan_closer():
+    with pytest.raises(ValueError):
+        split_top_level("a),b")
