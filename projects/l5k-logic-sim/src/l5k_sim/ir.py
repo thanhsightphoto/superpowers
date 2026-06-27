@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Union
 
 
 @dataclass
@@ -16,7 +15,7 @@ class Branch:
     legs: "list[list[RungElement]]"
 
 
-RungElement = Union[Instruction, Branch]
+RungElement = Instruction | Branch
 
 
 @dataclass
