@@ -12,7 +12,7 @@ class Instruction:
 
 @dataclass
 class Branch:
-    legs: "list[list[RungElement]]"
+    legs: list[list[RungElement]]
 
 
 RungElement = Instruction | Branch
@@ -89,9 +89,12 @@ def _element_to_dict(e: RungElement) -> dict:
 
 
 def _element_from_dict(d: dict) -> RungElement:
-    if d["kind"] == "instruction":
+    kind = d["kind"]
+    if kind == "instruction":
         return Instruction(d["mnemonic"], list(d["operands"]), d["raw"])
-    return Branch([[_element_from_dict(x) for x in leg] for leg in d["legs"]])
+    if kind == "branch":
+        return Branch([[_element_from_dict(x) for x in leg] for leg in d["legs"]])
+    raise ValueError(f"unknown rung element kind: {kind!r}")
 
 
 def _tag_to_dict(t: Tag) -> dict:

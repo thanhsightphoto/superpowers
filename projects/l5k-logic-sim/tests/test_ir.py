@@ -1,7 +1,11 @@
 import json
+
+import pytest
+
 from l5k_sim.ir import (
     Instruction, Branch, Rung, Routine, Tag, AOIDef, DataType,
     Program, Controller, Project, project_to_dict, project_from_dict,
+    _element_from_dict,
 )
 
 
@@ -39,3 +43,8 @@ def test_branch_round_trips_with_kind_discriminator():
     rung0 = d["controller"]["programs"][0]["routines"][0]["rungs"][0]
     assert rung0["elements"][0]["kind"] == "instruction"
     assert rung0["elements"][1]["kind"] == "branch"
+
+
+def test_unknown_element_kind_raises():
+    with pytest.raises(ValueError):
+        _element_from_dict({"kind": "bogus"})
