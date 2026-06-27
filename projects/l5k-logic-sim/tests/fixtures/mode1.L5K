@@ -1,0 +1,35 @@
+CONTROLLER Sutherland_IPress_CompactGuard (ProcessorType := "1769-L30ERMS",
+	            Comment := "test fixture")
+	DATATYPE briles_special_modes (FamilyType := NoFamily)
+		active_mode : DINT;
+		out_ram_cycle_cmd : BIT;
+	END_DATATYPE
+	TAG
+		global_estop : BOOL (Description := "controller scope estop") := 0;
+	END_TAG
+	ADD_ON_INSTRUCTION_DEFINITION scaler_dint (Description := "scale a dint")
+		PARAMETERS
+			In : DINT (Usage := Input);
+			Out : DINT (Usage := Output);
+		END_PARAMETERS
+		ROUTINE Logic
+			N: MOVE(In,Out);
+		END_ROUTINE
+	END_ADD_ON_INSTRUCTION_DEFINITION
+	PROGRAM Mode_1 (MAIN := "Main")
+		TAG
+			step : DINT (Description := "state") := 0;
+			stop_at_tdc : BOOL := 0;
+		END_TAG
+		ROUTINE Main
+			RC: "DOC | top of mode 1";
+			N: NOP();
+			N: JSR(Outputs,0);
+		END_ROUTINE
+		ROUTINE Outputs
+			RC: "cycle cmd";
+			N: EQ(step,40)XIO(stop_at_tdc)OTE(out_ram_cycle_cmd);
+			N: XIC(step)[OTL(a) ,WIDGET(b) ]OTU(step);
+		END_ROUTINE
+	END_PROGRAM
+END_CONTROLLER
