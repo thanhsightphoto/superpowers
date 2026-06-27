@@ -1,3 +1,5 @@
+import pytest
+
 from l5k_sim.rung_parser import parse_rung
 from l5k_sim.ir import Instruction
 
@@ -23,3 +25,18 @@ def test_expression_operand_with_inner_parens_and_spaces():
 def test_question_mark_operands_preserved():
     els = parse_rung("CTU(feedback_counter,?,?)")
     assert els[0].operands == ["feedback_counter", "?", "?"]
+
+
+def test_operands_are_stripped_of_surrounding_spaces():
+    els = parse_rung("EQ( step , 40 )")
+    assert els[0].operands == ["step", "40"]
+
+
+def test_middle_instruction_operand_covered():
+    els = parse_rung("EQ(step,40)XIO(stop_at_tdc)OTE(out)")
+    assert els[1].operands == ["stop_at_tdc"]
+
+
+def test_unexpected_character_raises():
+    with pytest.raises(ValueError):
+        parse_rung("@bad")

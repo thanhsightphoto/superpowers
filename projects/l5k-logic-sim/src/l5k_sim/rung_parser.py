@@ -28,6 +28,8 @@ def _parse_sequence(s: str) -> list[RungElement]:
             i = close + 1
             continue
         # otherwise: an instruction MNEMONIC(args)
+        if ch not in _IDENT:
+            raise ValueError(f"unexpected character {ch!r} at {i} in {s!r}")
         j = i
         while j < n and s[j] in _IDENT:
             j += 1
