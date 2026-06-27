@@ -1,0 +1,7 @@
+# Never commit customer/project PLC files
+*.L5K
+*.L5X
+*.ACD
+*.l5k
+*.l5x
+*.acd
