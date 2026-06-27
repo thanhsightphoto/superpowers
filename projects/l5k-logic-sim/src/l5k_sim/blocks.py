@@ -13,7 +13,7 @@ class Block:
     keyword: str
     header: str
     body_lines: list[str] = field(default_factory=list)
-    children: list["Block"] = field(default_factory=list)
+    children: list[Block] = field(default_factory=list)
 
 
 def _first_token(line: str) -> str:
@@ -27,20 +27,16 @@ def scan_blocks(text: str) -> list[Block]:
     lines = text.splitlines()
     pos = 0
 
-    def parse_block_list(stop_keyword: str | None) -> tuple[list[Block], int]:
+    def parse_top_level() -> list[Block]:
         nonlocal pos
         result: list[Block] = []
         while pos < len(lines):
-            line = lines[pos]
-            token = _first_token(line)
-            if stop_keyword is not None and token == f"END_{stop_keyword}":
-                pos += 1
-                return result, pos
+            token = _first_token(lines[pos])
             if token in OPENERS:
                 result.append(parse_one(token))
             else:
-                pos += 1  # stray top-level line, ignore
-        return result, pos
+                pos += 1  # stray line, ignore
+        return result
 
     def parse_one(keyword: str) -> Block:
         nonlocal pos
@@ -69,5 +65,4 @@ def scan_blocks(text: str) -> list[Block]:
                 pos += 1
         return block
 
-    blocks, _ = parse_block_list(None)
-    return blocks
+    return parse_top_level()
