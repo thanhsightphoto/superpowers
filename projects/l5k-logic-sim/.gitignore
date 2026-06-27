@@ -5,3 +5,14 @@
 *.l5k
 *.l5x
 *.acd
+
+# ...except small synthetic test fixtures (no customer data)
+!tests/fixtures/*.L5K
+!tests/fixtures/*.l5k
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
