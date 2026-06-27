@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from l5k_sim.blocks import Block
+from l5k_sim.blocks import Block, block_name
 from l5k_sim.ir import Routine, Rung, Tag
 from l5k_sim.rung_parser import parse_rung
 from l5k_sim.scan import find_matching
@@ -70,8 +70,8 @@ def parse_tag_block(block: Block, scope: str) -> list[Tag]:
     return tags
 
 
-def parse_routine_block(block: Block) -> Routine:
-    name = block.header.strip().split(None, 1)[0] if block.header.strip() else ""
+def parse_routine_block(block: Block, diagnostics: list[str] | None = None) -> Routine:
+    name = block_name(block)
     description = None
     rungs: list[Rung] = []
     pending_comment: str | None = None
@@ -85,8 +85,14 @@ def parse_routine_block(block: Block) -> Routine:
                 pending_comment = comment
         elif stmt.startswith("N:"):
             rll = stmt[len("N:"):].strip()
-            rungs.append(Rung(number=number, comment=pending_comment,
-                              elements=parse_rung(rll), raw=rll[:-1] if rll.endswith(";") else rll))
+            raw = rll[:-1] if rll.endswith(";") else rll
+            try:
+                elements = parse_rung(rll)
+            except ValueError as exc:
+                elements = []
+                if diagnostics is not None:
+                    diagnostics.append(f"unparseable rung {number} in routine {name!r}: {raw} ({exc})")
+            rungs.append(Rung(number=number, comment=pending_comment, elements=elements, raw=raw))
             number += 1
             pending_comment = None
     return Routine(name=name, description=description, rungs=rungs)

@@ -16,6 +16,12 @@ class Block:
     children: list[Block] = field(default_factory=list)
 
 
+def block_name(block: Block) -> str:
+    """The block's name: first whitespace-delimited token of its header, or ''."""
+    header = block.header.strip()
+    return header.split(None, 1)[0] if header else ""
+
+
 def _first_token(line: str) -> str:
     stripped = line.strip()
     if not stripped:

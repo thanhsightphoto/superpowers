@@ -40,3 +40,25 @@ def test_missing_controller_block_returns_diagnostic(tmp_path):
     proj = parse_l5k(str(p))
     assert proj.controller.name == ""
     assert proj.diagnostics == ["no CONTROLLER block"]
+
+
+def test_malformed_rung_degrades_to_diagnostic(tmp_path):
+    text = (
+        'CONTROLLER C (ProcessorType := "1769-L30ERMS")\n'
+        '\tPROGRAM P (MAIN := "Main")\n'
+        '\t\tROUTINE Main\n'
+        '\t\t\tN: XIC(ok)OTE(good);\n'
+        '\t\t\tN: XIC(a)$bad(b);\n'
+        '\t\tEND_ROUTINE\n'
+        '\tEND_PROGRAM\n'
+        'END_CONTROLLER\n'
+    )
+    p = tmp_path / "bad.L5K"
+    p.write_text(text)
+    proj = parse_l5k(str(p))  # must NOT raise
+    routine = proj.controller.programs[0].routines[0]
+    assert len(routine.rungs) == 2
+    assert routine.rungs[0].elements[0].mnemonic == "XIC"   # good rung parsed
+    assert routine.rungs[1].elements == []                   # malformed rung degraded
+    assert routine.rungs[1].raw == "XIC(a)$bad(b)"           # raw text preserved
+    assert any("unparseable rung" in d for d in proj.diagnostics)
