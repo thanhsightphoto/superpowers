@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 from l5k_sim.ir import Branch, Instruction, Project, RungElement
 
 SUPPORTED_V1: set[str] = {
@@ -10,7 +12,7 @@ SUPPORTED_V1: set[str] = {
 }
 
 
-def _walk(elements: list[RungElement]):
+def _walk(elements: list[RungElement]) -> Iterator[Instruction]:
     for e in elements:
         if isinstance(e, Instruction):
             yield e

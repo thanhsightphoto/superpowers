@@ -11,8 +11,9 @@ def test_coverage_counts_and_flags_unsupported():
     # WIDGET is the only unsupported mnemonic in the fixture
     assert rep["unsupported_mnemonics"] == {"WIDGET": 1}
     assert rep["unsupported"] == 1
-    assert rep["total_instructions"] >= 7
-    assert 0.0 <= rep["supported_pct"] <= 100.0
+    assert rep["total_instructions"] == 10
+    assert rep["supported"] == 9
+    assert rep["supported_pct"] == 90.0
 
 
 def test_supported_set_includes_core_bits():

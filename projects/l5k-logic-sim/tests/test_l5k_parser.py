@@ -32,3 +32,11 @@ def test_program_routines_and_rungs():
     outputs = next(r for r in prog.routines if r.name == "Outputs")
     assert outputs.rungs[0].comment == "cycle cmd"
     assert outputs.rungs[0].elements[0].mnemonic == "EQ"
+
+
+def test_missing_controller_block_returns_diagnostic(tmp_path):
+    p = tmp_path / "no_controller.L5K"
+    p.write_text("SOME_GARBAGE_LINE\nMORE_GARBAGE\n")
+    proj = parse_l5k(str(p))
+    assert proj.controller.name == ""
+    assert proj.diagnostics == ["no CONTROLLER block"]
