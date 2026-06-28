@@ -61,6 +61,22 @@ def test_jsr_calls_subroutine():
     assert eng.db.read("P", "y") is True
 
 
+def test_branch_side_effects_fire_in_all_legs():
+    tags = [Tag("a", "BOOL", "P", None, "1", None),
+            Tag("b", "BOOL", "P", None, "1", None),
+            Tag("ya", "BOOL", "P", None, "0", None),
+            Tag("yb", "BOOL", "P", None, "0", None)]
+    branch = Branch([
+        [Instruction("XIC", ["a"], ""), Instruction("OTE", ["ya"], "")],
+        [Instruction("XIC", ["b"], ""), Instruction("OTE", ["yb"], "")],
+    ])
+    r = _rung(branch)
+    eng = _engine(tags, Routine("Main", None, [r]))
+    eng.call_routine("P", "Main")
+    assert eng.db.read("P", "ya") is True
+    assert eng.db.read("P", "yb") is True   # fires even though leg[0] already succeeded
+
+
 def test_unknown_mnemonic_records_diagnostic_and_passes_through():
     tags = [Tag("y", "BOOL", "P", None, "0", None)]
     r = _rung(Instruction("WIDGET", ["z"], ""), Instruction("OTE", ["y"], ""))

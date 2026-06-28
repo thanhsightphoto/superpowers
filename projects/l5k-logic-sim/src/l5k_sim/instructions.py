@@ -5,7 +5,7 @@ from typing import Callable
 HANDLERS: dict[str, Callable] = {}
 
 
-def register(*mnemonics: str):
+def register(*mnemonics: str) -> Callable[[Callable], Callable]:
     def deco(fn: Callable) -> Callable:
         for m in mnemonics:
             HANDLERS[m] = fn

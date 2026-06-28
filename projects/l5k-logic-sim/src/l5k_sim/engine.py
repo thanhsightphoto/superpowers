@@ -25,7 +25,7 @@ class ScanEngine:
         return self.db.read(scope, s)
 
     # ---- evaluation ----
-    def eval_elements(self, scope: str, elements: list, power_in: bool) -> bool:
+    def eval_elements(self, scope: str, elements: list[Instruction | Branch], power_in: bool) -> bool:
         power = power_in
         for el in elements:
             if isinstance(el, Branch):
@@ -48,6 +48,7 @@ class ScanEngine:
     def call_routine(self, scope: str, routine_name: str) -> None:
         prog = self._programs.get(scope)
         if prog is None:
+            self.diagnostics.append(f"missing program {scope}")
             return
         routine = next((r for r in prog.routines if r.name == routine_name), None)
         if routine is None:
