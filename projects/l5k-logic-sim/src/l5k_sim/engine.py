@@ -75,7 +75,13 @@ class ScanEngine:
 
     # ---- scan loop ----
     def scan(self, program: str | None = None) -> None:
-        prog = self._programs[program] if program else self.project.controller.programs[0]
+        if program:
+            prog = self._programs.get(program)
+            if prog is None:
+                self.diagnostics.append(f"missing program {program}")
+                return
+        else:
+            prog = self.project.controller.programs[0]
         self.time_ms += self.scan_period_ms
         self._apply_forces()
         if prog.main_routine:

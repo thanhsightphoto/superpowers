@@ -24,6 +24,7 @@ def test_sequence_advances_through_steps_and_counts():
     assert eng.get("P", "step") == 10
     assert eng.get("P", "running") is True
     assert eng.get("P", "presses.ACC") == 1      # start held -> no new edge
+    assert eng.get("P", "presses.DN") is False    # ACC 1 < PRE 5
     eng.set("P", "stop", True)
     eng.scan()                                   # stop -> step 0; running off
     assert eng.get("P", "step") == 0
@@ -32,10 +33,13 @@ def test_sequence_advances_through_steps_and_counts():
 
 def test_force_overrides_logic_each_scan():
     eng = _engine()
-    eng.force("P", "running", True)              # pin running on
+    eng.force("P", "running", True)
     eng.set("P", "start", True)
-    eng.run(3)
-    assert eng.get("P", "running") is True       # logic tried to drive it off, force wins
+    eng.scan()                                   # step 0->5: OTE(running) writes False (step != 10), force re-writes True
+    assert eng.get("P", "step") == 5
+    assert eng.get("P", "running") is True       # definitive: force beat OTE on the same scan
+    eng.run(2)
+    assert eng.get("P", "running") is True        # stays forced on
 
 
 def test_time_advances_deterministically():
