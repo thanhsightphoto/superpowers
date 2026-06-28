@@ -12,7 +12,7 @@ Independent project parked in this Superpowers fork for cross-laptop syncing.
 - **Design / notes:** [`2026-06-27-design.md`](2026-06-27-design.md) — start here.
 - **Plan 1 (parser → IR):** [`2026-06-27-plan-01-parser.md`](2026-06-27-plan-01-parser.md) — ✅ complete
 - **Plan 2 (scan engine):** [`2026-06-27-plan-02-engine.md`](2026-06-27-plan-02-engine.md) — ✅ complete
-- Plan 3 (web UI) follows after Plan 2 lands.
+- **Plan 3 (web UI):** [`2026-06-27-plan-03-webui.md`](2026-06-27-plan-03-webui.md) — in progress
 
 ## Engine status (Plan 2)
 
