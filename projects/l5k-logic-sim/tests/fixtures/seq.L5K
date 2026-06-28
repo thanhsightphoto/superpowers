@@ -1,0 +1,30 @@
+CONTROLLER SeqDemo (ProcessorType := "1769-L30ERMS")
+	PROGRAM P (MAIN := "Main")
+		TAG
+			start : BOOL := 0;
+			stop : BOOL := 0;
+			step : DINT := 0;
+			running : BOOL := 0;
+			dwell : TIMER := [0,0,0];
+			ons : DINT := 0;
+			presses : COUNTER := [0,0,0];
+		END_TAG
+		ROUTINE Main
+			N: JSR(Logic,0);
+		END_ROUTINE
+		ROUTINE Logic
+			RC: "start at idle moves to step 5";
+			N: XIC(start)EQ(step,0)MOVE(5,step);
+			RC: "dwell timer runs during step 5";
+			N: EQ(step,5)TON(dwell,?,?);
+			RC: "after dwell, advance to step 10";
+			N: EQ(step,5)XIC(dwell.DN)MOVE(10,step);
+			RC: "stop resets to idle (evaluated before outputs so running drops same scan)";
+			N: XIC(stop)MOVE(0,step);
+			RC: "step 10 energizes running";
+			N: EQ(step,10)OTE(running);
+			RC: "count rising edges of start";
+			N: XIC(start)ONS(ons.0)CTU(presses,?,?);
+		END_ROUTINE
+	END_PROGRAM
+END_CONTROLLER

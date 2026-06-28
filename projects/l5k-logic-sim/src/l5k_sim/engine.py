@@ -17,6 +17,7 @@ class ScanEngine:
         self.time_ms = 0
         self.diagnostics: list[str] = []
         self._programs: dict[str, Program] = {p.name: p for p in project.controller.programs}
+        self.forced: dict[tuple[str, str], Any] = {}
 
     # ---- operand helpers ----
     def _operand(self, scope: str, s: str) -> Any:
@@ -56,3 +57,31 @@ class ScanEngine:
             return
         for rung in routine.rungs:
             self.eval_rung(scope, rung)
+
+    # ---- tag access API ----
+    def get(self, scope: str, operand: str) -> Any:
+        return self.db.read(scope, operand)
+
+    def set(self, scope: str, operand: str, value: Any) -> None:
+        self.db.write(scope, operand, value)
+
+    def force(self, scope: str, operand: str, value: Any) -> None:
+        self.forced[(scope, operand)] = value
+        self.db.write(scope, operand, value)
+
+    def _apply_forces(self) -> None:
+        for (scope, operand), value in self.forced.items():
+            self.db.write(scope, operand, value)
+
+    # ---- scan loop ----
+    def scan(self, program: str | None = None) -> None:
+        prog = self._programs[program] if program else self.project.controller.programs[0]
+        self.time_ms += self.scan_period_ms
+        self._apply_forces()
+        if prog.main_routine:
+            self.call_routine(prog.name, prog.main_routine)
+        self._apply_forces()  # forces win even over same-scan writes
+
+    def run(self, n: int, program: str | None = None) -> None:
+        for _ in range(n):
+            self.scan(program)
