@@ -123,3 +123,61 @@ def _ctu(engine, scope, instr, power_in):
     done = acc >= pre
     engine.db.write(scope, f"{name}.DN", done)
     return done
+
+
+import operator as _op
+
+
+@register("MOVE", "MOV")
+def _move(engine, scope, instr, power_in):
+    if power_in:
+        src, dst = instr.operands[0], instr.operands[1]
+        engine.db.write(scope, dst, engine._operand(scope, src))
+    return power_in
+
+
+def _arith(fn):
+    def handler(engine, scope, instr, power_in):
+        if power_in:
+            a = engine._operand(scope, instr.operands[0])
+            b = engine._operand(scope, instr.operands[1])
+            engine.db.write(scope, instr.operands[2], fn(a, b))
+        return power_in
+    return handler
+
+
+HANDLERS["ADD"] = _arith(_op.add)
+HANDLERS["SUB"] = _arith(_op.sub)
+HANDLERS["MUL"] = _arith(_op.mul)
+HANDLERS["DIV"] = _arith(lambda a, b: a / b)
+
+
+@register("CPT")
+def _cpt(engine, scope, instr, power_in):
+    if power_in:
+        engine.db.write(scope, instr.operands[0], engine._operand(scope, instr.operands[1]))
+    return power_in
+
+
+def _compare(fn):
+    def handler(engine, scope, instr, power_in):
+        a = engine._operand(scope, instr.operands[0])
+        b = engine._operand(scope, instr.operands[1])
+        return power_in and fn(a, b)
+    return handler
+
+
+HANDLERS["EQ"] = _compare(_op.eq)
+HANDLERS["NE"] = _compare(_op.ne)
+HANDLERS["GT"] = _compare(_op.gt)
+HANDLERS["GE"] = _compare(_op.ge)
+HANDLERS["LT"] = _compare(_op.lt)
+HANDLERS["LE"] = _compare(_op.le)
+
+
+@register("LIMIT")
+def _limit(engine, scope, instr, power_in):
+    lo = engine._operand(scope, instr.operands[0])
+    test = engine._operand(scope, instr.operands[1])
+    hi = engine._operand(scope, instr.operands[2])
+    return power_in and (lo <= test <= hi)
