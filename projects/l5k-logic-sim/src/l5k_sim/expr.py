@@ -21,8 +21,8 @@ def _dotted(node: ast.AST) -> str:
     raise ValueError(f"unsupported reference node: {ast.dump(node)}")
 
 
-def _eval(node: ast.AST, scope: str, db: TagDatabase):
-    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+def _eval(node: ast.AST, scope: str, db: TagDatabase) -> int | float:
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
         return node.value
     if isinstance(node, ast.Name):
         return db.read(scope, node.id)

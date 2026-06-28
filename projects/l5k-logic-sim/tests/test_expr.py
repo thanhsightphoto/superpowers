@@ -32,3 +32,22 @@ def test_rejects_calls():
     db = _db()
     with pytest.raises(ValueError):
         eval_expr("__import__('os').system('echo hi')", "P", db)
+
+
+def test_attribute_dotted_resolution():
+    tags = [Tag("dwell", "TIMER", "P", None, None, None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [], [Program("P", None, tags, [])])))
+    db.write("P", "dwell.ACC", 42)
+    assert eval_expr("dwell.ACC + 1", "P", db) == 43
+
+
+def test_dotted_rejects_nested_call():
+    db = _db()
+    with pytest.raises(ValueError):
+        eval_expr("foo().bar", "P", db)
+
+
+def test_bare_boolean_literal_rejected():
+    db = _db()
+    with pytest.raises(ValueError):
+        eval_expr("True + 1", "P", db)
