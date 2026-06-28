@@ -18,6 +18,7 @@ class ScanEngine:
         self.diagnostics: list[str] = []
         self._programs: dict[str, Program] = {p.name: p for p in project.controller.programs}
         self.forced: dict[tuple[str, str], Any] = {}
+        self.trace: dict[str, bool] = {}
 
     # ---- operand helpers ----
     def _operand(self, scope: str, s: str) -> Any:
@@ -26,14 +27,18 @@ class ScanEngine:
         return self.db.read(scope, s)
 
     # ---- evaluation ----
-    def eval_elements(self, scope: str, elements: list[Instruction | Branch], power_in: bool) -> bool:
+    def eval_elements(self, scope: str, elements: list[Instruction | Branch],
+                      power_in: bool, key_prefix: str = "") -> bool:
         power = power_in
-        for el in elements:
+        for i, el in enumerate(elements):
             if isinstance(el, Branch):
-                outs = [self.eval_elements(scope, leg, power) for leg in el.legs]
+                outs = [self.eval_elements(scope, leg, power, f"{key_prefix}.{i}.{j}")
+                        for j, leg in enumerate(el.legs)]
                 power = any(outs)
             elif isinstance(el, Instruction):
                 power = self._eval_instruction(scope, el, power)
+                if key_prefix:
+                    self.trace[f"{key_prefix}.{i}"] = bool(power)
         return power
 
     def _eval_instruction(self, scope: str, instr: Instruction, power_in: bool) -> bool:
@@ -47,8 +52,8 @@ class ScanEngine:
             self.diagnostics.append(f"instruction {instr.mnemonic} in {scope} raised: {exc}")
             return power_in
 
-    def eval_rung(self, scope: str, rung: Rung) -> None:
-        self.eval_elements(scope, rung.elements, True)
+    def eval_rung(self, scope: str, rung: Rung, routine_name: str = "") -> None:
+        self.eval_elements(scope, rung.elements, True, f"{scope}/{routine_name}/{rung.number}")
 
     def call_routine(self, scope: str, routine_name: str) -> None:
         prog = self._programs.get(scope)
@@ -60,7 +65,7 @@ class ScanEngine:
             self.diagnostics.append(f"missing routine {routine_name} in {scope}")
             return
         for rung in routine.rungs:
-            self.eval_rung(scope, rung)
+            self.eval_rung(scope, rung, routine.name)
 
     # ---- tag access API ----
     def get(self, scope: str, operand: str) -> Any:
@@ -87,6 +92,7 @@ class ScanEngine:
         else:
             prog = self.project.controller.programs[0]
         self.time_ms += self.scan_period_ms
+        self.trace = {}
         self._apply_forces()
         if prog.main_routine:
             self.call_routine(prog.name, prog.main_routine)
