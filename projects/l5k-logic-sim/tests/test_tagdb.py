@@ -2,6 +2,7 @@ from l5k_sim.ir import Controller, DataType, Program, Project, Tag
 from l5k_sim.tagdb import TagDatabase
 
 
+
 def _project() -> Project:
     udt = DataType("io_t", [("active_mode", "DINT"), ("running", "BOOL")])
     ctrl_tags = [Tag("g_flag", "BOOL", "controller", None, "1", None)]
@@ -57,3 +58,13 @@ def test_bit_access():
     assert db.read("P", "ons") == 1  # bit 0 set
     db.write("P", "ons.2", True)
     assert db.read("P", "ons") == 5
+
+
+def test_nested_member_bit_write_symmetric_with_read():
+    udt = DataType("blk", [("word", "DINT")])
+    tags = [Tag("u", "blk", "P", None, None, None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "u.word.3") is False
+    db.write("P", "u.word.3", True)
+    assert db.read("P", "u.word.3") is True
+    assert db.read("P", "u.word") == 8

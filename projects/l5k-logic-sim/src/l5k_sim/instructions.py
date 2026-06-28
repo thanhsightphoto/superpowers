@@ -103,11 +103,11 @@ def _ton(engine, scope, instr, power_in):
 def _res(engine, scope, instr, power_in):
     if power_in:
         name = instr.operands[0]
-        for member in ("ACC", "DN", "TT", "EN", "CU", "CD", "prev_cu"):
-            try:
-                engine.db.write(scope, f"{name}.{member}", 0 if member == "ACC" else False)
-            except (KeyError, TypeError):
-                pass
+        struct = engine.db.read(scope, name)
+        if isinstance(struct, dict):
+            for member in ("ACC", "DN", "TT", "EN", "CU", "CD", "prev_cu"):
+                if member in struct:
+                    engine.db.write(scope, f"{name}.{member}", 0 if member == "ACC" else False)
     return power_in
 
 
@@ -147,7 +147,7 @@ def _arith(fn):
 HANDLERS["ADD"] = _arith(_op.add)
 HANDLERS["SUB"] = _arith(_op.sub)
 HANDLERS["MUL"] = _arith(_op.mul)
-HANDLERS["DIV"] = _arith(lambda a, b: a / b)
+HANDLERS["DIV"] = _arith(_op.truediv)
 
 
 @register("CPT")

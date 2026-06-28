@@ -41,7 +41,11 @@ class ScanEngine:
         if handler is None:
             self.diagnostics.append(f"unsupported instruction {instr.mnemonic} in {scope}")
             return power_in
-        return handler(self, scope, instr, power_in)
+        try:
+            return handler(self, scope, instr, power_in)
+        except Exception as exc:
+            self.diagnostics.append(f"instruction {instr.mnemonic} in {scope} raised: {exc}")
+            return power_in
 
     def eval_rung(self, scope: str, rung: Rung) -> None:
         self.eval_elements(scope, rung.elements, True)
@@ -86,7 +90,8 @@ class ScanEngine:
         self._apply_forces()
         if prog.main_routine:
             self.call_routine(prog.name, prog.main_routine)
-        self._apply_forces()  # forces win even over same-scan writes
+        # re-apply forces so forced values win over same-scan logic writes
+        self._apply_forces()
 
     def run(self, n: int, program: str | None = None) -> None:
         for _ in range(n):

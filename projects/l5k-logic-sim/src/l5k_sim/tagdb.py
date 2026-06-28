@@ -77,16 +77,25 @@ class TagDatabase:
         if not ref.path:
             container[ref.base] = value
             return
-        # descend to the parent of the leaf
+        leaf = ref.path[-1]
+        if isinstance(leaf, int):
+            # bit write: locate the integer that holds the bit, then set/clear it
+            if not ref.path[:-1]:
+                cur = int(container[ref.base])
+                container[ref.base] = (cur | (1 << leaf)) if value else (cur & ~(1 << leaf))
+            else:
+                parent = container[ref.base]
+                for seg in ref.path[:-2]:
+                    parent = parent[seg]
+                key = ref.path[-2]
+                cur = int(parent[key])
+                parent[key] = (cur | (1 << leaf)) if value else (cur & ~(1 << leaf))
+            return
+        # member write
         parent = container[ref.base]
         for seg in ref.path[:-1]:
             parent = parent[seg]
-        leaf = ref.path[-1]
-        if isinstance(leaf, int) and not ref.path[:-1]:
-            base_int = int(container[ref.base])
-            container[ref.base] = (base_int | (1 << leaf)) if value else (base_int & ~(1 << leaf))
-        else:
-            parent[leaf] = value
+        parent[leaf] = value
 
     def snapshot(self) -> dict[str, Any]:
         return {"controller": copy.deepcopy(self.controller),

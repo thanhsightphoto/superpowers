@@ -82,3 +82,15 @@ def test_res_clears_timer_state():
     assert eng.db.read("P", "t.ACC") == 0
     assert eng.db.read("P", "t.DN") is False
     assert eng.db.read("P", "t.EN") is False
+
+
+def test_res_does_not_pollute_timer_or_clear_pre():
+    tags = [Tag("rst", "BOOL", "P", None, "1", None), Tag("t", "TIMER", "P", None, None, None)]
+    eng = _eng(tags, Instruction("XIC", ["rst"], ""), Instruction("RES", ["t"], ""))
+    eng.db.write("P", "t.PRE", 500)
+    eng.db.write("P", "t.ACC", 100)
+    eng.call_routine("P", "Main")
+    assert eng.db.read("P", "t.ACC") == 0
+    assert eng.db.read("P", "t.PRE") == 500                 # PRE untouched
+    timer = eng.db.read("P", "t")
+    assert "CU" not in timer and "prev_cu" not in timer     # no counter-member pollution

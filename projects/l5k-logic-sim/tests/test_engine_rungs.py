@@ -84,3 +84,15 @@ def test_unknown_mnemonic_records_diagnostic_and_passes_through():
     eng.call_routine("P", "Main")
     assert eng.db.read("P", "y") is True  # passed through
     assert any("WIDGET" in d for d in eng.diagnostics)
+
+
+def test_raising_handler_degrades_to_diagnostic():
+    tags = [Tag("a", "DINT", "P", None, "1", None), Tag("b", "DINT", "P", None, "0", None),
+            Tag("d", "DINT", "P", None, "0", None), Tag("y", "BOOL", "P", None, "0", None)]
+    r1 = Rung(0, None, [Instruction("DIV", ["a", "b", "d"], "")], "")  # div by zero
+    r2 = Rung(1, None, [Instruction("OTE", ["y"], "")], "")            # must still run
+    prog = Program("P", "Main", tags, [Routine("Main", None, [r1, r2])])
+    eng = ScanEngine(Project(Controller("C", "x", [], [], [], [prog])))
+    eng.call_routine("P", "Main")                                     # must NOT raise
+    assert eng.db.read("P", "y") is True                             # later rung still executed
+    assert any("DIV" in d and "raised" in d for d in eng.diagnostics)
