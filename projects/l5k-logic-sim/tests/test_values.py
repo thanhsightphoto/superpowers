@@ -1,4 +1,3 @@
-import pytest
 from l5k_sim.values import Ref, is_literal, parse_literal, looks_like_expr, parse_ref
 
 
@@ -7,6 +6,7 @@ def test_decimal_and_float_and_hex_literals():
     assert is_literal("38.01") and parse_literal("38.01") == 38.01
     assert is_literal("16#ff") and parse_literal("16#ff") == 255
     assert is_literal("16#0000_3f9a") and parse_literal("16#0000_3f9a") == 0x3f9a
+    assert not is_literal("16#_")          # underscore-only hex body is not a literal
 
 
 def test_tag_names_are_not_literals():
@@ -28,3 +28,7 @@ def test_looks_like_expr():
     assert looks_like_expr("a + b")
     assert not looks_like_expr("dwell.DN")
     assert not looks_like_expr("40")
+
+
+def test_tab_whitespace_is_expr_separator():
+    assert looks_like_expr("a\tb")

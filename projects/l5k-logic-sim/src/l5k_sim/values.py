@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 _DEC_INT = re.compile(r"^[+-]?\d+$")
 _FLOAT = re.compile(r"^[+-]?\d+\.\d+$")
-_HEX = re.compile(r"^16#[0-9A-Fa-f_]+$")
-_EXPR_CHARS = re.compile(r"[+\-*/]| ")
+_HEX = re.compile(r"^16#[0-9A-Fa-f][0-9A-Fa-f_]*$")
+_EXPR_CHARS = re.compile(r"[-+*/]|\s")
 
 
 @dataclass(frozen=True)
