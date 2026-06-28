@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator as _op
 from typing import Callable
 
 HANDLERS: dict[str, Callable] = {}
@@ -123,9 +124,6 @@ def _ctu(engine, scope, instr, power_in):
     done = acc >= pre
     engine.db.write(scope, f"{name}.DN", done)
     return done
-
-
-import operator as _op
 
 
 @register("MOVE", "MOV")

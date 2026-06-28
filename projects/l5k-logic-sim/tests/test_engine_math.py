@@ -49,3 +49,23 @@ def test_limit_inclusive():
     eng = _eng(tags, Instruction("LIMIT", ["1", "t", "10"], ""), Instruction("OTE", ["y"], ""))
     eng.call_routine("P", "Main")
     assert eng.db.read("P", "y") is True
+
+
+def test_math_all_four_ops():
+    tags = [Tag("a", "DINT", "P", None, "12", None), Tag("b", "DINT", "P", None, "4", None),
+            Tag("d", "REAL", "P", None, None, None)]
+    for op, expected in [("ADD", 16), ("SUB", 8), ("MUL", 48), ("DIV", 3.0)]:
+        eng = _eng(tags, Instruction(op, ["a", "b", "d"], ""))
+        eng.call_routine("P", "Main")
+        assert eng.db.read("P", "d") == expected
+
+
+def test_limit_boundaries_inclusive_and_outside():
+    tags = [Tag("t", "DINT", "P", None, "1", None), Tag("y", "BOOL", "P", None, "0", None)]
+    eng = _eng(tags, Instruction("LIMIT", ["1", "t", "10"], ""), Instruction("OTE", ["y"], ""))
+    eng.call_routine("P", "Main")
+    assert eng.db.read("P", "y") is True    # t=1 lower bound inclusive
+    eng.db.write("P", "t", 10); eng.call_routine("P", "Main")
+    assert eng.db.read("P", "y") is True    # t=10 upper bound inclusive
+    eng.db.write("P", "t", 11); eng.call_routine("P", "Main")
+    assert eng.db.read("P", "y") is False   # outside the range
