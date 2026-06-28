@@ -11,8 +11,33 @@ Independent project parked in this Superpowers fork for cross-laptop syncing.
 
 - **Design / notes:** [`2026-06-27-design.md`](2026-06-27-design.md) — start here.
 - **Plan 1 (parser → IR):** [`2026-06-27-plan-01-parser.md`](2026-06-27-plan-01-parser.md) — ✅ complete
-- **Plan 2 (scan engine):** [`2026-06-27-plan-02-engine.md`](2026-06-27-plan-02-engine.md) — in progress
+- **Plan 2 (scan engine):** [`2026-06-27-plan-02-engine.md`](2026-06-27-plan-02-engine.md) — ✅ complete
 - Plan 3 (web UI) follows after Plan 2 lands.
+
+## Engine status (Plan 2)
+
+**Plan 2 complete** — a deterministic, Logix-style scan engine that executes the IR.
+Full suite **82 tests passing** on Python 3.11.15.
+
+- **`values.py`** — operand classification (literal / tag-ref / expression)
+- **`tagdb.py`** — scoped tag database (program → controller fallback; member + bit access; TIMER/COUNTER/UDT init)
+- **`expr.py`** — safe `ast` arithmetic evaluator (no code execution)
+- **`instructions.py`** — handler registry: bit/flow, edge (ONS/OSF), timer/counter (TON/RES/CTU), data/math/compare
+- **`engine.py`** — `ScanEngine`: rung power flow (series=AND, parallel legs=OR), JSR, deterministic scan clock, `scan`/`run`/`get`/`set`/`force`
+
+The synthetic state-machine fixture (`tests/fixtures/seq.L5K`) runs scan-by-scan with
+correct step transitions, timer dwell, counter edges, and tag forcing.
+
+**Real-file status:** the engine runs the real 862 KB Briles export without crashing —
+unsupported/erroring instructions degrade to diagnostics instead of aborting the scan.
+But it does **not yet fully simulate** that file: many `MOVE`/`XIC` rungs degrade because
+they read UDT members the tag-db init doesn't yet create (deep/InOut UDTs). **Full
+UDT-member fidelity is the next hardening item** (before/with Plan 3).
+
+**For Plan 3 (web UI):** per-instruction/per-rung power state is not yet extractable —
+`eval_elements` returns only the rung's final boolean. Plan 3 will need an engine hook
+(a per-scan trace or visitor callback) to drive rung animation; `TagDatabase.snapshot()`
+is a ready per-scan frame source for tag watch/diff.
 
 ## Status
 
