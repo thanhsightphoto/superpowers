@@ -35,14 +35,14 @@ class TagDatabase:
     def _init_type(self, data_type: str, initial: str | None) -> Any:
         dt = data_type.upper()
         if dt == "BOOL":
-            return bool(int(initial)) if initial not in (None, "") else False
+            return bool(parse_literal(initial)) if (initial and is_literal(initial)) else False
         if dt in ("DINT", "INT", "SINT"):
             return parse_literal(initial) if (initial and is_literal(initial)) else 0
         if dt == "REAL":
             return float(parse_literal(initial)) if (initial and is_literal(initial)) else 0.0
-        if dt in ("TIMER",):
+        if dt == "TIMER":
             return dict(_TIMER)
-        if dt in ("COUNTER",):
+        if dt == "COUNTER":
             return dict(_COUNTER)
         if data_type in self._udts:
             return {m: self._init_type(mt, None) for m, mt in self._udts[data_type]}
@@ -50,7 +50,7 @@ class TagDatabase:
 
     # ---- resolution ----
     def _container_for(self, scope: str, base: str) -> dict[str, Any]:
-        prog = self.programs.get(scope, {})
+        prog = self.programs.setdefault(scope, {})
         if base in prog:
             return prog
         if base in self.controller:
@@ -65,7 +65,7 @@ class TagDatabase:
         ref = parse_ref(operand)
         container = self._container_for(scope, ref.base)
         val = container[ref.base]
-        for i, seg in enumerate(ref.path):
+        for seg in ref.path:
             if isinstance(seg, int):
                 return bool((int(val) >> seg) & 1)
             val = val[seg]

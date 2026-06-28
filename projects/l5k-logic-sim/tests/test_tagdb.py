@@ -43,6 +43,12 @@ def test_udt_member_access():
     assert db.read("P", "io.active_mode") == 3
 
 
+def test_write_to_unknown_scope_persists():
+    db = TagDatabase.from_project(_project())
+    db.write("OTHER", "newtag", 9)
+    assert db.read("OTHER", "newtag") == 9
+
+
 def test_bit_access():
     db = TagDatabase.from_project(_project())
     assert db.read("P", "ons.0") is False
