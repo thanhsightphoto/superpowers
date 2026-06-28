@@ -55,3 +55,30 @@ def test_ons_pulses_one_scan():
     eng.db.write("P", "y.0", False)
     eng.call_routine("P", "Main")
     assert eng.db.read("P", "y.0") is False  # ONS no longer passes on the second scan
+
+
+def test_osf_pulses_on_falling_edge():
+    tags = [Tag("in", "BOOL", "P", None, "1", None), Tag("s", "DINT", "P", None, "0", None),
+            Tag("y", "DINT", "P", None, "0", None)]
+    eng = _eng(tags, Instruction("XIC", ["in"], ""), Instruction("OSF", ["s.0"], ""),
+               Instruction("OTL", ["y.0"], ""))
+    eng.call_routine("P", "Main")               # in high -> no falling edge -> no pulse
+    assert eng.db.read("P", "y.0") is False
+    eng.db.write("P", "in", False)
+    eng.call_routine("P", "Main")               # falling edge -> one-scan pulse
+    assert eng.db.read("P", "y.0") is True
+    eng.db.write("P", "y.0", False)
+    eng.call_routine("P", "Main")               # held low -> no second pulse
+    assert eng.db.read("P", "y.0") is False
+
+
+def test_res_clears_timer_state():
+    tags = [Tag("rst", "BOOL", "P", None, "1", None), Tag("t", "TIMER", "P", None, None, None)]
+    eng = _eng(tags, Instruction("XIC", ["rst"], ""), Instruction("RES", ["t"], ""))
+    eng.db.write("P", "t.ACC", 100)
+    eng.db.write("P", "t.DN", True)
+    eng.db.write("P", "t.EN", True)
+    eng.call_routine("P", "Main")
+    assert eng.db.read("P", "t.ACC") == 0
+    assert eng.db.read("P", "t.DN") is False
+    assert eng.db.read("P", "t.EN") is False

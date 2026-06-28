@@ -104,7 +104,7 @@ def _res(engine, scope, instr, power_in):
         name = instr.operands[0]
         for member in ("ACC", "DN", "TT", "EN", "CU", "CD", "prev_cu"):
             try:
-                engine.db.write(scope, f"{name}.{member}", 0 if member in ("ACC",) else False)
+                engine.db.write(scope, f"{name}.{member}", 0 if member == "ACC" else False)
             except (KeyError, TypeError):
                 pass
     return power_in
