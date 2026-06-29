@@ -34,11 +34,14 @@ def _serve(svc, web_dir="."):
 
 def _req(httpd, method, path, body=None):
     conn = HTTPConnection("127.0.0.1", httpd.server_address[1])
-    payload = json.dumps(body).encode() if body is not None else None
-    conn.request(method, path, body=payload, headers={"Content-Type": "application/json"})
-    resp = conn.getresponse()
-    data = resp.read()
-    return resp.status, (json.loads(data) if data and resp.getheader("Content-Type", "").startswith("application/json") else data)
+    try:
+        payload = json.dumps(body).encode() if body is not None else None
+        conn.request(method, path, body=payload, headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        data = resp.read()
+        return resp.status, (json.loads(data) if data and resp.getheader("Content-Type", "").startswith("application/json") else data)
+    finally:
+        conn.close()
 
 
 def test_http_api_ir_and_step():
@@ -53,5 +56,15 @@ def test_http_api_ir_and_step():
         assert status == 200 and st["tags"]["programs"]["P"]["y"] is True
         status, _ = _req(httpd, "GET", "/nope")
         assert status == 404
+    finally:
+        httpd.shutdown()
+
+
+def test_force_missing_key_returns_400():
+    svc = SimService(_project())
+    httpd = _serve(svc)
+    try:
+        status, _ = _req(httpd, "POST", "/api/force", {"scope": "P"})  # missing operand/value
+        assert status == 400
     finally:
         httpd.shutdown()

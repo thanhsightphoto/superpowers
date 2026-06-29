@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
@@ -18,32 +19,42 @@ class SimService:
         self.project = project
         self.scan_period_ms = scan_period_ms
         self.engine = ScanEngine(project, scan_period_ms)
+        self._lock = threading.Lock()
 
     def ir(self) -> dict:
         return serialize_ir(self.project)
 
-    def state(self) -> dict:
+    def _state(self) -> dict:
         return serialize_state(self.engine)
 
+    def state(self) -> dict:
+        with self._lock:
+            return self._state()
+
     def step(self) -> dict:
-        self.engine.scan()
-        return self.state()
+        with self._lock:
+            self.engine.scan()
+            return self._state()
 
     def run(self, n: int) -> dict:
-        self.engine.run(int(n))
-        return self.state()
+        with self._lock:
+            self.engine.run(int(n))
+            return self._state()
 
     def reset(self) -> dict:
-        self.engine = ScanEngine(self.project, self.scan_period_ms)
-        return self.state()
+        with self._lock:
+            self.engine = ScanEngine(self.project, self.scan_period_ms)
+            return self._state()
 
     def force(self, scope: str, operand: str, value: Any) -> dict:
-        self.engine.force(scope, operand, value)
-        return self.state()
+        with self._lock:
+            self.engine.force(scope, operand, value)
+            return self._state()
 
     def set(self, scope: str, operand: str, value: Any) -> dict:
-        self.engine.set(scope, operand, value)
-        return self.state()
+        with self._lock:
+            self.engine.set(scope, operand, value)
+            return self._state()
 
 
 def make_handler(service: SimService, web_dir: str):
@@ -97,18 +108,21 @@ def make_handler(service: SimService, web_dir: str):
             except (ValueError, json.JSONDecodeError):
                 self._json({"error": "bad json"}, 400)
                 return
-            if self.path == "/api/step":
-                self._json(service.step())
-            elif self.path == "/api/run":
-                self._json(service.run(body.get("n", 1)))
-            elif self.path == "/api/reset":
-                self._json(service.reset())
-            elif self.path == "/api/force":
-                self._json(service.force(body["scope"], body["operand"], body["value"]))
-            elif self.path == "/api/set":
-                self._json(service.set(body["scope"], body["operand"], body["value"]))
-            else:
-                self._json({"error": "not found"}, 404)
+            try:
+                if self.path == "/api/step":
+                    self._json(service.step())
+                elif self.path == "/api/run":
+                    self._json(service.run(body.get("n", 1)))
+                elif self.path == "/api/reset":
+                    self._json(service.reset())
+                elif self.path == "/api/force":
+                    self._json(service.force(body["scope"], body["operand"], body["value"]))
+                elif self.path == "/api/set":
+                    self._json(service.set(body["scope"], body["operand"], body["value"]))
+                else:
+                    self._json({"error": "not found"}, 404)
+            except (KeyError, TypeError) as exc:
+                self._json({"error": f"bad request: {exc}"}, 400)
 
     return Handler
 
