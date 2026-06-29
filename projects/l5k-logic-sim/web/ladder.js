@@ -19,7 +19,7 @@ function drawElement(element, elid, x, y) {
   const cx = x + COL_W / 2;
   g.appendChild(el("line", {x1: x, y1: y, x2: x + COL_W, y2: y, class: "wire"}));
   const m = element.mnemonic;
-  if (m === "XIC" || m === "XIO" || INPUTS.has(m)) {
+  if (INPUTS.has(m)) {
     g.appendChild(el("line", {x1: cx - 8, y1: y - 12, x2: cx - 8, y2: y + 12, class: "bar"}));
     g.appendChild(el("line", {x1: cx + 8, y1: y - 12, x2: cx + 8, y2: y + 12, class: "bar"}));
     if (m === "XIO") g.appendChild(el("line", {x1: cx - 10, y1: y + 12, x2: cx + 10, y2: y - 12, class: "slash"}));
@@ -68,7 +68,7 @@ function renderRungSVG(rung, prefix) {
     if (element.kind === "branch") maxRows = Math.max(maxRows, element.legs.length);
   });
   // power rails
-  svg.appendChild(el("line", {x1: PAD - 6, y1: y - ROW_H, x2: PAD - 6, y2: y + maxRows * ROW_H, class: "rail"}));
+  svg.appendChild(el("line", {x1: PAD - 6, y1: PAD, x2: PAD - 6, y2: y + maxRows * ROW_H, class: "rail"}));
   const height = y + maxRows * ROW_H + PAD;
   svg.setAttribute("width", x + PAD);
   svg.setAttribute("height", height);

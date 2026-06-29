@@ -56,6 +56,7 @@ function selected() {
 
 function renderLadder() {
   const {prog, routine} = selected();
+  if (!routine) return;
   const host = document.getElementById("ladder");
   host.innerHTML = "";
   routine.rungs.forEach(rung => {
