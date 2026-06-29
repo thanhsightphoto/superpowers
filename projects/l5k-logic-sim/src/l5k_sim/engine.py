@@ -52,7 +52,7 @@ class ScanEngine:
             self.diagnostics.append(f"instruction {instr.mnemonic} in {scope} raised: {exc}")
             return power_in
 
-    def eval_rung(self, scope: str, rung: Rung, routine_name: str = "") -> None:
+    def eval_rung(self, scope: str, rung: Rung, routine_name: str) -> None:
         self.eval_elements(scope, rung.elements, True, f"{scope}/{routine_name}/{rung.number}")
 
     def call_routine(self, scope: str, routine_name: str) -> None:
