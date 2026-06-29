@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><title>L5K Logic Sim</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <strong>L5K Logic Sim</strong>
+    <select id="routine"></select>
+    <button id="step">Step</button>
+    <button id="run">Run</button>
+    <button id="pause" disabled>Pause</button>
+    <button id="reset">Reset</button>
+    <span id="time">t = 0 ms</span>
+  </header>
+  <main>
+    <section id="ladder"></section>
+    <aside>
+      <h3>Tags</h3><table id="tags"></table>
+      <h3>Force</h3>
+      <form id="forceForm">
+        <input id="fScope" placeholder="program" size="8">
+        <input id="fOp" placeholder="tag.member" size="14">
+        <input id="fVal" placeholder="value" size="6">
+        <button>Force</button>
+      </form>
+      <h3>Diagnostics</h3><ul id="diags"></ul>
+    </aside>
+  </main>
+  <script src="/ladder.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

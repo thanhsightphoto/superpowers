@@ -1,0 +1,15 @@
+* { box-sizing: border-box; font-family: ui-monospace, monospace; }
+body { margin: 0; color: #ddd; background: #1b1b1f; }
+header { display: flex; gap: .5rem; align-items: center; padding: .5rem; background: #26262c; }
+header strong { margin-right: 1rem; }
+main { display: flex; }
+#ladder { flex: 1; padding: 1rem; overflow: auto; }
+aside { width: 320px; padding: 1rem; background: #222228; }
+.rung { border-bottom: 1px solid #333; padding: .4rem 0; }
+.rung .cmt { color: #7c7; font-size: .8rem; }
+.el { padding: 0 .25rem; color: #888; }
+.el.hot { color: #2f2; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; }
+td { border-bottom: 1px solid #333; padding: 2px 4px; font-size: .85rem; }
+.true { color: #2f2; } .false { color: #666; }
+button { background: #34343c; color: #ddd; border: 1px solid #555; padding: .2rem .5rem; }
