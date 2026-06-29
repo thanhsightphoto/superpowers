@@ -34,7 +34,7 @@ async function boot() {
   paint(await jget("/api/state"));
 }
 
-function coerce(v) { if (v === "true") return true; if (v === "false") return false;
+function coerce(v) { if (v === "") return v; if (v === "true") return true; if (v === "false") return false;
   return isNaN(Number(v)) ? v : Number(v); }
 
 function startRun() {
@@ -49,7 +49,7 @@ function stopRun() {
 }
 
 function selected() {
-  const [p, r] = current.split("::");
+  const [p, r] = current.split("::", 2);
   const prog = IR.programs.find(x => x.name === p);
   return {prog, routine: prog.routines.find(x => x.name === r)};
 }
@@ -57,6 +57,7 @@ function selected() {
 // Task 4 renders rungs as text; Task 5 replaces renderLadder with SVG.
 function renderLadder() {
   const {prog, routine} = selected();
+  if (!routine) return;
   const host = document.getElementById("ladder");
   host.innerHTML = "";
   routine.rungs.forEach(rung => {
