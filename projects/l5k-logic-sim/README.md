@@ -34,10 +34,34 @@ But it does **not yet fully simulate** that file: many `MOVE`/`XIC` rungs degrad
 they read UDT members the tag-db init doesn't yet create (deep/InOut UDTs). **Full
 UDT-member fidelity is the next hardening item** (before/with Plan 3).
 
-**For Plan 3 (web UI):** per-instruction/per-rung power state is not yet extractable —
-`eval_elements` returns only the rung's final boolean. Plan 3 will need an engine hook
-(a per-scan trace or visitor callback) to drive rung animation; `TagDatabase.snapshot()`
-is a ready per-scan frame source for tag watch/diff.
+## Web UI status (Plan 3 — in progress)
+
+Browser UI that loads an L5K, renders ladder rungs, and animates power flow scan-by-scan
+(run / single-step / reset, force tags, watch values). Zero-dependency: stdlib
+`http.server` JSON API + client-driven polling (no WebSocket), plain HTML/JS/SVG.
+
+| Task | What | State |
+|------|------|-------|
+| 1 | Engine per-scan power-trace hook | ✅ |
+| 2 | IR + live-state JSON serialization (`webserialize.py`) | ✅ |
+| 3 | `SimService` + stdlib HTTP JSON API (`server.py`, thread-safe) | ✅ |
+| 4 | Frontend shell + `python -m l5k_sim` launcher (`web/`) | ✅ |
+| 5 | SVG ladder rendering + power-flow animation | ⬜ in progress |
+
+Full suite **92 tests passing** on Python 3.11.15. The engine→frontend element-id
+contract (`{scope}/{routine}/{rung}.{path}`) is verified to match exactly, so hot
+contacts/coils light up from the per-scan trace.
+
+### Run the UI
+```bash
+cd projects/l5k-logic-sim
+.venv/bin/python -m l5k_sim tests/fixtures/seq.L5K --port 8765
+# open http://127.0.0.1:8765 — select a routine, Force start=true, Step/Run/Reset
+```
+(Task 4 renders rungs textually; Task 5 upgrades them to graphical SVG ladder.)
+
+> Real-file caveat still applies (see above): the UI will load and step the real Briles
+> file, but logic partially degrades pending UDT-member fidelity.
 
 ## Status
 
