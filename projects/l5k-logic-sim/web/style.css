@@ -13,3 +13,14 @@ table { width: 100%; border-collapse: collapse; }
 td { border-bottom: 1px solid #333; padding: 2px 4px; font-size: .85rem; }
 .true { color: #2f2; } .false { color: #666; }
 button { background: #34343c; color: #ddd; border: 1px solid #555; padding: .2rem .5rem; }
+.rung-svg { display: block; }
+.rung-svg .wire { stroke: #666; stroke-width: 2; }
+.rung-svg .rail { stroke: #888; stroke-width: 3; }
+.rung-svg .bar { stroke: #bbb; stroke-width: 2; }
+.rung-svg .slash { stroke: #bbb; stroke-width: 2; }
+.rung-svg .box { fill: #2c2c34; stroke: #888; }
+.rung-svg .coil { fill: #bbb; font: 14px ui-monospace, monospace; }
+.rung-svg .lbl { fill: #999; font: 11px ui-monospace, monospace; }
+.rung-svg .el.hot .wire, .rung-svg .el.hot .bar, .rung-svg .el.hot .slash { stroke: #2f2; }
+.rung-svg .el.hot .coil, .rung-svg .el.hot .lbl { fill: #2f2; }
+.rung-svg .el.hot .box { stroke: #2f2; }

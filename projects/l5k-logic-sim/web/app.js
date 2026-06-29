@@ -54,47 +54,27 @@ function selected() {
   return {prog, routine: prog.routines.find(x => x.name === r)};
 }
 
-// Task 4 renders rungs as text; Task 5 replaces renderLadder with SVG.
 function renderLadder() {
   const {prog, routine} = selected();
-  if (!routine) return;
   const host = document.getElementById("ladder");
   host.innerHTML = "";
   routine.rungs.forEach(rung => {
     const div = document.createElement("div");
     div.className = "rung";
     if (rung.comment) { const c = document.createElement("div"); c.className = "cmt"; c.textContent = rung.comment; div.appendChild(c); }
-    const line = document.createElement("div");
-    walk(rung.elements, `${prog.name}/${routine.name}/${rung.number}`, line);
-    div.appendChild(line);
+    div.appendChild(window.renderRungSVG(rung, `${prog.name}/${routine.name}/${rung.number}`));
     host.appendChild(div);
   });
 }
-
-function walk(elements, prefix, line) {
-  elements.forEach((el, i) => {
-    if (el.kind === "branch") {
-      line.appendChild(text("["));
-      el.legs.forEach((leg, j) => { if (j) line.appendChild(text("|")); walk(leg, `${prefix}.${i}.${j}`, line); });
-      line.appendChild(text("]"));
-    } else {
-      const span = document.createElement("span");
-      span.className = "el"; span.id = "el:" + `${prefix}.${i}`;
-      span.textContent = el.mnemonic + "(" + el.operands.join(",") + ")";
-      line.appendChild(span);
-    }
-  });
-}
-function text(t) { const s = document.createElement("span"); s.className = "el"; s.textContent = t; return s; }
 
 let lastState = null;
 function paint(state) {
   if (!state) return;
   lastState = state;
   document.getElementById("time").textContent = "t = " + state.time_ms + " ms";
-  document.querySelectorAll(".el.hot").forEach(e => e.classList.remove("hot"));
+  document.querySelectorAll(".el.hot, [data-elid].hot").forEach(e => e.classList.remove("hot"));
   for (const [key, hot] of Object.entries(state.trace))
-    if (hot) { const e = document.getElementById("el:" + key); if (e) e.classList.add("hot"); }
+    if (hot) document.querySelectorAll(`[data-elid="${key}"]`).forEach(e => e.classList.add("hot"));
   renderTags(state.tags); renderDiags(state.diagnostics);
 }
 
