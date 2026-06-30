@@ -32,3 +32,11 @@ def test_looks_like_expr():
 
 def test_tab_whitespace_is_expr_separator():
     assert looks_like_expr("a\tb")
+
+
+def test_binary_literals():
+    assert is_literal("2#0") and parse_literal("2#0") == 0
+    assert is_literal("2#1") and parse_literal("2#1") == 1
+    assert is_literal("2#1011") and parse_literal("2#1011") == 11
+    assert is_literal("2#0000_1111") and parse_literal("2#0000_1111") == 15
+    assert not is_literal("2#")          # empty binary body is not a literal
