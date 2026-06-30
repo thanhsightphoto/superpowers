@@ -148,3 +148,13 @@ def test_aggregate_initializer_short_pads_with_default():
     tags = [Tag("counts", "INT[5]", "P", None, "[7,8]", None)]
     db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [], [Program("P", None, tags, [])])))
     assert db.read("P", "counts") == [7, 8, 0, 0, 0]
+
+
+def test_whole_array_write_copies_not_aliases():
+    db = TagDatabase.from_project(_project())
+    db.write("P", "a", [1, 2, 3])
+    db.write("P", "b", db.read("P", "a"))   # simulates MOV a -> b
+    db.write("P", "b[0]", 99)
+    assert db.read("P", "a") == [1, 2, 3]    # source must be unchanged
+    assert db.read("P", "b") == [99, 2, 3]
+    assert db.read("P", "a") is not db.read("P", "b")

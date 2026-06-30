@@ -118,7 +118,7 @@ class TagDatabase:
         ref = parse_ref(operand)
         container = self._container_for(scope, ref.base)
         if not ref.path:
-            container[ref.base] = value
+            container[ref.base] = copy.deepcopy(value) if isinstance(value, (list, dict)) else value
             return
         # Navigate to the (holder, key) that owns the final segment.
         holder: Any = container
