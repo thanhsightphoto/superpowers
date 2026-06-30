@@ -23,3 +23,11 @@ def test_interface_member_keyerrors_are_gone():
     raised = [d for d in engine.diagnostics if "raised:" in d]
     for member in _PREV_FAILING:
         assert not any(member in d for d in raised), f"{member} still raising: {raised}"
+
+
+def test_array_tag_initializer_resolves_on_real_file():
+    engine = ScanEngine(parse_l5k(REAL))
+    # Cam_Cut_Dwell_Select : INT[12] := [0,0,0,0,0,0,0,0,0,0,2,0] in MainProgram scope.
+    assert engine.db.read("MainProgram", "Cam_Cut_Dwell_Select[10]") == 2
+    assert engine.db.read("MainProgram", "Cam_Cut_Dwell_Select[0]") == 0
+    engine.run(5)  # must not raise
