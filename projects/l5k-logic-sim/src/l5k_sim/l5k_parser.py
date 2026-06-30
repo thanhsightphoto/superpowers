@@ -39,7 +39,7 @@ def _build_controller(block: Block, diagnostics: list[str]) -> Controller:
         if child.keyword == "TAG":
             controller_tags.extend(parse_tag_block(child, scope="controller"))
         elif child.keyword == "DATATYPE":
-            datatypes.append(_build_datatype(child))
+            datatypes.append(_build_datatype(child, diagnostics))
         elif child.keyword == "ADD_ON_INSTRUCTION_DEFINITION":
             aois.append(_build_aoi(child, diagnostics))
         elif child.keyword == "PROGRAM":
@@ -49,7 +49,7 @@ def _build_controller(block: Block, diagnostics: list[str]) -> Controller:
                       datatypes=datatypes, aois=aois, programs=programs)
 
 
-def _build_datatype(block: Block) -> DataType:
+def _build_datatype(block: Block, diagnostics: list[str] | None = None) -> DataType:
     name = block_name(block)
     members: list[Member] = []
     for line in block.body_lines:
@@ -57,32 +57,37 @@ def _build_datatype(block: Block) -> DataType:
         if not s.endswith(";"):
             continue
         s = s[:-1].strip()
-        # strip the outer (attrs) group, if present
-        paren = s.find("(")
-        if paren != -1:
-            close = find_matching(s, paren)
-            s = (s[:paren] + s[close + 1:]).strip()
-        if not s:
-            continue
-        if s.startswith("BIT ") and ":" in s:
-            head, bitpos = s.split(":", 1)
-            toks = head.split()  # ["BIT", <name>, <host>]
-            if len(toks) >= 3 and bitpos.strip().lstrip("+-").isdigit():
-                members.append(Member(toks[1], "BIT", bit_host=toks[2], bit_pos=int(bitpos.strip())))
+        try:
+            # strip the outer (attrs) group, if present
+            paren = s.find("(")
+            if paren != -1:
+                close = find_matching(s, paren)
+                s = (s[:paren] + s[close + 1:]).strip()
+            if not s:
                 continue
-        # plain type-first member: "<TYPE> <name>[dim]?"
-        toks = s.split(None, 1)
-        if len(toks) != 2:
+            if s.startswith("BIT ") and ":" in s:
+                head, bitpos = s.split(":", 1)
+                toks = head.split()  # ["BIT", <name>, <host>]
+                if len(toks) >= 3 and bitpos.strip().lstrip("+-").isdigit():
+                    members.append(Member(toks[1], "BIT", bit_host=toks[2], bit_pos=int(bitpos.strip())))
+                    continue
+            # plain type-first member: "<TYPE> <name>[dim]?"
+            toks = s.split(None, 1)
+            if len(toks) != 2:
+                continue
+            mtype, mname = toks[0], toks[1].strip()
+            dim = None
+            if mname.endswith("]") and "[" in mname:
+                base, _, rest = mname.partition("[")
+                inner = rest[:-1].strip()
+                if inner.isdigit():
+                    dim = int(inner)
+                    mname = base.strip()
+            members.append(Member(mname, mtype, dim=dim))
+        except Exception as exc:
+            if diagnostics is not None:
+                diagnostics.append(f"malformed datatype member in {name!r}: {line.strip()} ({exc})")
             continue
-        mtype, mname = toks[0], toks[1].strip()
-        dim = None
-        if mname.endswith("]") and "[" in mname:
-            base, _, rest = mname.partition("[")
-            inner = rest[:-1].strip()
-            if inner.isdigit():
-                dim = int(inner)
-                mname = base.strip()
-        members.append(Member(mname, mtype, dim=dim))
     return DataType(name=name, members=members)
 
 

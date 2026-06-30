@@ -72,6 +72,29 @@ def test_missing_controller_block_returns_diagnostic(tmp_path):
     assert proj.diagnostics == ["no CONTROLLER block"]
 
 
+def test_malformed_datatype_member_degrades_to_diagnostic(tmp_path):
+    # A member line with an unbalanced '(' would make find_matching raise ValueError.
+    # The parser must NOT raise; it must skip the bad line, still parse the good one,
+    # and record a diagnostic.
+    text = (
+        'CONTROLLER C (ProcessorType := "1769-L30ERMS")\n'
+        '\tDATATYPE BadDT (FamilyType := NoFamily)\n'
+        '\t\tDINT GoodMember;\n'
+        '\t\tDINT BrokenMember (Radix := Decimal;\n'  # unbalanced '(' — no closing ')'
+        '\tEND_DATATYPE\n'
+        'END_CONTROLLER\n'
+    )
+    f = tmp_path / "bad_dt.L5K"
+    f.write_text(text)
+    proj = parse_l5k(str(f))   # must NOT raise
+    dt = next(dt for dt in proj.controller.datatypes if dt.name == "BadDT")
+    assert any(m.name == "GoodMember" for m in dt.members), "well-formed member must still be parsed"
+    assert not any(m.name == "BrokenMember" for m in dt.members), "malformed member must be skipped"
+    assert any("BadDT" in d for d in proj.diagnostics), "a diagnostic mentioning the type must be recorded"
+    assert any("BrokenMember" in d or "malformed datatype member" in d for d in proj.diagnostics), \
+        "diagnostic must mention the malformed line"
+
+
 def test_malformed_rung_degrades_to_diagnostic(tmp_path):
     text = (
         'CONTROLLER C (ProcessorType := "1769-L30ERMS")\n'

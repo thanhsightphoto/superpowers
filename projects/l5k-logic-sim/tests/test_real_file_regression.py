@@ -18,6 +18,8 @@ _PREV_FAILING = [
 def test_interface_member_keyerrors_are_gone():
     engine = ScanEngine(parse_l5k(REAL))
     engine.run(5)
+    assert any(k.startswith("Lower_KO_Valve_Adapter/") for k in engine.trace), \
+        "regression scope was not scanned — test would be vacuous"
     raised = [d for d in engine.diagnostics if "raised:" in d]
     for member in _PREV_FAILING:
         assert not any(member in d for d in raised), f"{member} still raising: {raised}"
