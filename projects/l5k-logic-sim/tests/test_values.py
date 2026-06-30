@@ -1,4 +1,4 @@
-from l5k_sim.values import Ref, is_literal, parse_literal, looks_like_expr, parse_ref
+from l5k_sim.values import Ref, Index, Bit, VarIndex, is_literal, parse_literal, looks_like_expr, parse_ref
 
 
 def test_decimal_and_float_and_hex_literals():
@@ -19,8 +19,8 @@ def test_parse_ref_member_and_bit():
     assert parse_ref("step") == Ref("step", ())
     assert parse_ref("dwell.DN") == Ref("dwell", ("DN",))
     assert parse_ref("interface.active_mode") == Ref("interface", ("active_mode",))
-    assert parse_ref("v37.01") == Ref("v37", (1,))   # numeric segment -> bit index
-    assert parse_ref("ons.0") == Ref("ons", (0,))
+    assert parse_ref("v37.01") == Ref("v37", (Bit(1),))   # numeric segment -> bit index
+    assert parse_ref("ons.0") == Ref("ons", (Bit(0),))
 
 
 def test_looks_like_expr():
@@ -32,6 +32,15 @@ def test_looks_like_expr():
 
 def test_tab_whitespace_is_expr_separator():
     assert looks_like_expr("a\tb")
+
+
+def test_parse_ref_typed_segments():
+    assert parse_ref("arr[0]") == Ref("arr", (Index(0),))
+    assert parse_ref("arr[3].10") == Ref("arr", (Index(3), Bit(10)))
+    assert parse_ref("rec.system[2]") == Ref("rec", ("system", Index(2)))
+    assert parse_ref("rec.system[2].flag") == Ref("rec", ("system", Index(2), "flag"))
+    assert parse_ref("arr[FAULT_BIT_CTR]") == Ref("arr", (VarIndex("FAULT_BIT_CTR"),))
+    assert parse_ref("Local:3:I.Data[3]") == Ref("Local:3:I", ("Data", Index(3)))
 
 
 def test_binary_literals():

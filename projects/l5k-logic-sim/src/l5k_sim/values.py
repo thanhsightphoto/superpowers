@@ -11,9 +11,24 @@ _EXPR_CHARS = re.compile(r"[-+*/]|\s")
 
 
 @dataclass(frozen=True)
+class Index:
+    i: int          # constant array index, e.g. [3]
+
+
+@dataclass(frozen=True)
+class Bit:
+    n: int          # numeric bit access, e.g. .5
+
+
+@dataclass(frozen=True)
+class VarIndex:
+    name: str       # non-constant index, e.g. [FAULT_BIT_CTR]; resolved in a later sub-project
+
+
+@dataclass(frozen=True)
 class Ref:
     base: str
-    path: tuple[str | int, ...]
+    path: tuple[Index | Bit | VarIndex | str, ...]
 
 
 def is_literal(s: str) -> bool:
@@ -40,11 +55,20 @@ def looks_like_expr(s: str) -> bool:
     return bool(_EXPR_CHARS.search(t))
 
 
+_REF_SEG = re.compile(r"\.([^.\[]+)|\[([^\]]*)\]")
+
+
 def parse_ref(s: str) -> Ref:
     t = s.strip()
-    parts = t.split(".")
-    base = parts[0]
-    segs: list[str | int] = []
-    for p in parts[1:]:
-        segs.append(int(p) if p.isdigit() else p)
+    m = re.match(r"[^.\[]+", t)
+    base = m.group(0) if m else t
+    rest = t[m.end():] if m else ""
+    segs: list[Index | Bit | VarIndex | str] = []
+    for tok in _REF_SEG.finditer(rest):
+        dot, brk = tok.group(1), tok.group(2)
+        if dot is not None:
+            segs.append(Bit(int(dot)) if dot.isdigit() else dot)
+        else:
+            inner = brk.strip()
+            segs.append(Index(int(inner)) if inner.isdigit() else VarIndex(inner))
     return Ref(base, tuple(segs))

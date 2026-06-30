@@ -90,3 +90,33 @@ def test_array_member_init_as_list():
     db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
     info = db.read("P", "rec.Info")
     assert isinstance(info, list) and len(info) == 8 and info == [0] * 8
+
+
+def test_array_index_read_write():
+    db = TagDatabase.from_project(_project())
+    db.write("P", "step", 0)            # ensure scope P exists
+    db.write("P", "arr", [10, 20, 30])  # whole-array write creates the list
+    assert db.read("P", "arr") == [10, 20, 30]
+    assert db.read("P", "arr[1]") == 20
+    db.write("P", "arr[1]", 99)
+    assert db.read("P", "arr[1]") == 99
+    assert db.read("P", "arr") == [10, 99, 30]
+
+
+def test_bit_after_index_round_trips():
+    db = TagDatabase.from_project(_project())
+    db.write("P", "words", [0, 0])
+    assert db.read("P", "words[1].3") is False
+    db.write("P", "words[1].3", True)
+    assert db.read("P", "words[1].3") is True
+    assert db.read("P", "words[1]") == 8       # bit 3 set on element 1
+    assert db.read("P", "words[0]") == 0       # element 0 untouched
+
+
+def test_array_index_out_of_range_degrades():
+    db = TagDatabase.from_project(_project())
+    db.write("P", "arr", [1, 2, 3])
+    assert db.read("P", "arr[9]") == 0          # degrades to default, no raise
+    db.write("P", "arr[9]", 5)                  # no-op, no raise
+    assert db.read("P", "arr") == [1, 2, 3]     # unchanged
+    assert any("index out of range" in d for d in db.diagnostics)

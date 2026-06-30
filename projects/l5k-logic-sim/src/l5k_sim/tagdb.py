@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 from l5k_sim.ir import Project, Tag, Member
-from l5k_sim.values import is_literal, parse_literal, parse_ref
+from l5k_sim.values import Bit, Index, VarIndex, is_literal, parse_literal, parse_ref
 
 _TIMER = {"PRE": 0, "ACC": 0, "EN": False, "TT": False, "DN": False}
 _COUNTER = {"PRE": 0, "ACC": 0, "CU": False, "CD": False, "DN": False, "prev_cu": False}
@@ -15,6 +15,7 @@ class TagDatabase:
         self.controller: dict[str, Any] = {}
         self.programs: dict[str, dict[str, Any]] = {}
         self._udts: dict[str, list[Member]] = {}
+        self.diagnostics: list[str] = []
 
     @classmethod
     def from_project(cls, project: Project) -> "TagDatabase":
@@ -76,9 +77,18 @@ class TagDatabase:
         container = self._container_for(scope, ref.base)
         val = container[ref.base]
         for seg in ref.path:
-            if isinstance(seg, int):
-                return bool((int(val) >> seg) & 1)
-            val = val[seg]
+            if isinstance(seg, Bit):
+                return bool((int(val) >> seg.n) & 1)
+            if isinstance(seg, Index):
+                if not isinstance(val, list) or not (0 <= seg.i < len(val)):
+                    self.diagnostics.append(f"index out of range: {operand}")
+                    return 0
+                val = val[seg.i]
+            elif isinstance(seg, VarIndex):
+                self.diagnostics.append(f"unresolved variable index: {operand}")
+                return 0
+            else:  # member (str)
+                val = val[seg]
         return val
 
     def write(self, scope: str, operand: str, value: Any) -> None:
@@ -87,25 +97,36 @@ class TagDatabase:
         if not ref.path:
             container[ref.base] = value
             return
-        leaf = ref.path[-1]
-        if isinstance(leaf, int):
-            # bit write: locate the integer that holds the bit, then set/clear it
-            if not ref.path[:-1]:
-                cur = int(container[ref.base])
-                container[ref.base] = (cur | (1 << leaf)) if value else (cur & ~(1 << leaf))
-            else:
-                parent = container[ref.base]
-                for seg in ref.path[:-2]:
-                    parent = parent[seg]
-                key = ref.path[-2]
-                cur = int(parent[key])
-                parent[key] = (cur | (1 << leaf)) if value else (cur & ~(1 << leaf))
-            return
-        # member write
-        parent = container[ref.base]
+        # Navigate to the (holder, key) that owns the final segment.
+        holder: Any = container
+        key: Any = ref.base
         for seg in ref.path[:-1]:
-            parent = parent[seg]
-        parent[leaf] = value
+            parent_val = holder[key]
+            if isinstance(seg, Index):
+                if not isinstance(parent_val, list) or not (0 <= seg.i < len(parent_val)):
+                    self.diagnostics.append(f"index out of range: {operand}")
+                    return
+                holder, key = parent_val, seg.i
+            elif isinstance(seg, VarIndex):
+                self.diagnostics.append(f"unresolved variable index: {operand}")
+                return
+            else:  # member (str)
+                holder, key = parent_val, seg
+        leaf = ref.path[-1]
+        if isinstance(leaf, Bit):
+            cur = int(holder[key])
+            holder[key] = (cur | (1 << leaf.n)) if value else (cur & ~(1 << leaf.n))
+        elif isinstance(leaf, Index):
+            target = holder[key]
+            if not isinstance(target, list) or not (0 <= leaf.i < len(target)):
+                self.diagnostics.append(f"index out of range: {operand}")
+                return
+            target[leaf.i] = value
+        elif isinstance(leaf, VarIndex):
+            self.diagnostics.append(f"unresolved variable index: {operand}")
+            return
+        else:  # member (str)
+            holder[key][leaf] = value
 
     def snapshot(self) -> dict[str, Any]:
         return {"controller": copy.deepcopy(self.controller),
