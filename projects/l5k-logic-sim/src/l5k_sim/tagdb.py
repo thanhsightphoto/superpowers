@@ -36,6 +36,8 @@ class TagDatabase:
         dt = data_type.upper()
         if dt == "BOOL":
             return bool(parse_literal(initial)) if (initial and is_literal(initial)) else False
+        if dt == "BIT":
+            return bool(parse_literal(initial)) if (initial and is_literal(initial)) else False
         if dt in ("DINT", "INT", "SINT"):
             return parse_literal(initial) if (initial and is_literal(initial)) else 0
         if dt == "REAL":
@@ -47,7 +49,12 @@ class TagDatabase:
         if data_type in self._udts:
             out: dict[str, Any] = {}
             for mem in self._udts[data_type]:
-                out[mem.name] = self._init_type(mem.data_type, None)
+                if mem.bit_host is not None:
+                    out[mem.name] = False
+                elif mem.dim is not None:
+                    out[mem.name] = [self._init_type(mem.data_type, None) for _ in range(mem.dim)]
+                else:
+                    out[mem.name] = self._init_type(mem.data_type, None)
             return out
         return 0  # unknown type — best-effort scalar
 

@@ -68,3 +68,25 @@ def test_nested_member_bit_write_symmetric_with_read():
     db.write("P", "u.word.3", True)
     assert db.read("P", "u.word.3") is True
     assert db.read("P", "u.word") == 8
+
+
+def test_bit_overlay_members_init_as_independent_bools():
+    udt = DataType("bits_t", [
+        Member("host", "SINT"),
+        Member("ext", "BIT", bit_host="host", bit_pos=6),
+        Member("ret", "BIT", bit_host="host", bit_pos=7),
+    ])
+    tags = [Tag("iface", "bits_t", "P", "InOut", None, None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "iface.ext") is False
+    db.write("P", "iface.ext", True)
+    assert db.read("P", "iface.ext") is True
+    assert db.read("P", "iface.ret") is False   # independent of ext
+
+
+def test_array_member_init_as_list():
+    udt = DataType("rec_t", [Member("Info", "DINT", dim=8)])
+    tags = [Tag("rec", "rec_t", "P", None, None, None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    info = db.read("P", "rec.Info")
+    assert isinstance(info, list) and len(info) == 8 and info == [0] * 8
