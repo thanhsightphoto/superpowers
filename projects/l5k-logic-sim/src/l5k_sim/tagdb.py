@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import re
 from typing import Any
 
 from l5k_sim.ir import Project, Tag, Member
@@ -8,6 +9,7 @@ from l5k_sim.values import Bit, Index, VarIndex, is_literal, parse_literal, pars
 
 _TIMER = {"PRE": 0, "ACC": 0, "EN": False, "TT": False, "DN": False}
 _COUNTER = {"PRE": 0, "ACC": 0, "CU": False, "CD": False, "DN": False, "prev_cu": False}
+_ARRAY = re.compile(r"^(\w+)\[(\d+)\]$")
 
 
 class TagDatabase:
@@ -47,6 +49,10 @@ class TagDatabase:
             return dict(_TIMER)
         if dt == "COUNTER":
             return dict(_COUNTER)
+        arr = _ARRAY.match(data_type.strip())
+        if arr:
+            elem_type, n = arr.group(1), int(arr.group(2))
+            return [self._init_type(elem_type, None) for _ in range(n)]
         if data_type in self._udts:
             out: dict[str, Any] = {}
             for mem in self._udts[data_type]:

@@ -120,3 +120,11 @@ def test_array_index_out_of_range_degrades():
     db.write("P", "arr[9]", 5)                  # no-op, no raise
     assert db.read("P", "arr") == [1, 2, 3]     # unchanged
     assert any("index out of range" in d for d in db.diagnostics)
+
+
+def test_array_tag_inits_to_list():
+    tags = [Tag("counts", "INT[12]", "P", None, None, None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [], [Program("P", None, tags, [])])))
+    counts = db.read("P", "counts")
+    assert isinstance(counts, list) and len(counts) == 12 and counts == [0] * 12
+    assert db.read("P", "counts[5]") == 0
