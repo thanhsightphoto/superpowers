@@ -12,7 +12,10 @@ Independent project parked in this Superpowers fork for cross-laptop syncing.
 - **Design / notes:** [`2026-06-27-design.md`](2026-06-27-design.md) — start here.
 - **Plan 1 (parser → IR):** [`2026-06-27-plan-01-parser.md`](2026-06-27-plan-01-parser.md) — ✅ complete
 - **Plan 2 (scan engine):** [`2026-06-27-plan-02-engine.md`](2026-06-27-plan-02-engine.md) — ✅ complete
-- **Plan 3 (web UI):** [`2026-06-27-plan-03-webui.md`](2026-06-27-plan-03-webui.md) — in progress
+- **Plan 3 (web UI):** [`2026-06-27-plan-03-webui.md`](2026-06-27-plan-03-webui.md) — ✅ complete
+
+**All three plans complete** — the full parser → engine → animated web UI vertical slice
+works end-to-end. Full suite **92 tests passing** on Python 3.11.15.
 
 ## Engine status (Plan 2)
 
@@ -34,7 +37,7 @@ But it does **not yet fully simulate** that file: many `MOVE`/`XIC` rungs degrad
 they read UDT members the tag-db init doesn't yet create (deep/InOut UDTs). **Full
 UDT-member fidelity is the next hardening item** (before/with Plan 3).
 
-## Web UI status (Plan 3 — in progress)
+## Web UI status (Plan 3 — complete)
 
 Browser UI that loads an L5K, renders ladder rungs, and animates power flow scan-by-scan
 (run / single-step / reset, force tags, watch values). Zero-dependency: stdlib
@@ -46,7 +49,7 @@ Browser UI that loads an L5K, renders ladder rungs, and animates power flow scan
 | 2 | IR + live-state JSON serialization (`webserialize.py`) | ✅ |
 | 3 | `SimService` + stdlib HTTP JSON API (`server.py`, thread-safe) | ✅ |
 | 4 | Frontend shell + `python -m l5k_sim` launcher (`web/`) | ✅ |
-| 5 | SVG ladder rendering + power-flow animation | ⬜ in progress |
+| 5 | SVG ladder rendering + power-flow animation | ✅ |
 
 Full suite **92 tests passing** on Python 3.11.15. The engine→frontend element-id
 contract (`{scope}/{routine}/{rung}.{path}`) is verified to match exactly, so hot
