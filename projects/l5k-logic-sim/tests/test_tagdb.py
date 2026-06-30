@@ -1,10 +1,10 @@
-from l5k_sim.ir import Controller, DataType, Program, Project, Tag
+from l5k_sim.ir import Controller, DataType, Member, Program, Project, Tag
 from l5k_sim.tagdb import TagDatabase
 
 
 
 def _project() -> Project:
-    udt = DataType("io_t", [("active_mode", "DINT"), ("running", "BOOL")])
+    udt = DataType("io_t", [Member("active_mode", "DINT"), Member("running", "BOOL")])
     ctrl_tags = [Tag("g_flag", "BOOL", "controller", None, "1", None)]
     prog_tags = [
         Tag("step", "DINT", "P", None, "0", None),
@@ -61,7 +61,7 @@ def test_bit_access():
 
 
 def test_nested_member_bit_write_symmetric_with_read():
-    udt = DataType("blk", [("word", "DINT")])
+    udt = DataType("blk", [Member("word", "DINT")])
     tags = [Tag("u", "blk", "P", None, None, None)]
     db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
     assert db.read("P", "u.word.3") is False

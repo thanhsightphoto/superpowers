@@ -3,7 +3,7 @@ import json
 import pytest
 
 from l5k_sim.ir import (
-    Instruction, Branch, Rung, Routine, Tag, AOIDef, DataType,
+    Instruction, Branch, Rung, Routine, Tag, AOIDef, DataType, Member,
     Program, Controller, Project, project_to_dict, project_from_dict,
     _element_from_dict,
 )
@@ -24,7 +24,7 @@ def _sample_project() -> Project:
     )
     routine = Routine("Outputs", "DOC | maps step to outputs", [rung])
     prog = Program("Mode_1", "Main", [Tag("step", "DINT", "Mode_1", None, "0", "state")], [routine])
-    ctrl = Controller("Sutherland", "1769-L30ERMS", [], [DataType("ud", [("m", "BOOL")])],
+    ctrl = Controller("Sutherland", "1769-L30ERMS", [], [DataType("ud", [Member("m", "BOOL")])],
                       [AOIDef("scaler_dint", [Tag("In", "DINT", "scaler_dint", "Input", None, None)], None)],
                       [prog])
     return Project(ctrl, diagnostics=["unsupported: FOO at Mode_1/Outputs rung 3"])

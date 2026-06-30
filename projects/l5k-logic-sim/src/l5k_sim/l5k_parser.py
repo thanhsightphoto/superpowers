@@ -5,7 +5,7 @@ import re
 from l5k_sim.blocks import Block, scan_blocks, block_name
 from l5k_sim.decls import parse_routine_block, parse_tag_block
 from l5k_sim.ir import (
-    AOIDef, Controller, DataType, Program, Project, Routine, Tag,
+    AOIDef, Controller, DataType, Member, Program, Project, Routine, Tag,
 )
 
 _PROC_RE = re.compile(r'ProcessorType\s*:=\s*"([^"]+)"')
@@ -50,13 +50,13 @@ def _build_controller(block: Block, diagnostics: list[str]) -> Controller:
 
 def _build_datatype(block: Block) -> DataType:
     name = block_name(block)
-    members: list[tuple[str, str]] = []
+    members: list[Member] = []
     for line in block.body_lines:
         s = line.strip()
         if s.endswith(";") and " : " in s:
             mname, rest = s[:-1].split(" : ", 1)
             mtype = rest.strip().split(None, 1)[0].rstrip(";")
-            members.append((mname.strip(), mtype))
+            members.append(Member(mname.strip(), mtype))
     return DataType(name=name, members=members)
 
 

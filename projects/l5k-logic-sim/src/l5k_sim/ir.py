@@ -51,9 +51,18 @@ class AOIDef:
 
 
 @dataclass
+class Member:
+    name: str
+    data_type: str
+    dim: int | None = None
+    bit_host: str | None = None
+    bit_pos: int | None = None
+
+
+@dataclass
 class DataType:
     name: str
-    members: list[tuple[str, str]]
+    members: list[Member]
 
 
 @dataclass
@@ -86,6 +95,15 @@ def _element_to_dict(e: RungElement) -> dict:
     if isinstance(e, Instruction):
         return {"kind": "instruction", "mnemonic": e.mnemonic, "operands": list(e.operands), "raw": e.raw}
     return {"kind": "branch", "legs": [[_element_to_dict(x) for x in leg] for leg in e.legs]}
+
+
+def _member_to_dict(m: Member) -> dict:
+    return {"name": m.name, "data_type": m.data_type, "dim": m.dim,
+            "bit_host": m.bit_host, "bit_pos": m.bit_pos}
+
+
+def _member_from_dict(d: dict) -> Member:
+    return Member(d["name"], d["data_type"], d.get("dim"), d.get("bit_host"), d.get("bit_pos"))
 
 
 def _element_from_dict(d: dict) -> RungElement:
@@ -131,7 +149,7 @@ def project_to_dict(p: Project) -> dict:
             "name": c.name,
             "processor": c.processor,
             "controller_tags": [_tag_to_dict(t) for t in c.controller_tags],
-            "datatypes": [{"name": dt.name, "members": [list(m) for m in dt.members]} for dt in c.datatypes],
+            "datatypes": [{"name": dt.name, "members": [_member_to_dict(m) for m in dt.members]} for dt in c.datatypes],
             "aois": [{"name": a.name,
                       "parameters": [_tag_to_dict(t) for t in a.parameters],
                       "logic": _routine_to_dict(a.logic) if a.logic else None} for a in c.aois],
@@ -147,7 +165,7 @@ def project_from_dict(d: dict) -> Project:
     ctrl = Controller(
         name=cd["name"], processor=cd["processor"],
         controller_tags=[_tag_from_dict(t) for t in cd["controller_tags"]],
-        datatypes=[DataType(x["name"], [tuple(m) for m in x["members"]]) for x in cd["datatypes"]],
+        datatypes=[DataType(x["name"], [_member_from_dict(m) for m in x["members"]]) for x in cd["datatypes"]],
         aois=[AOIDef(a["name"], [_tag_from_dict(t) for t in a["parameters"]],
                      _routine_from_dict(a["logic"]) if a["logic"] else None) for a in cd["aois"]],
         programs=[Program(pr["name"], pr["main_routine"],

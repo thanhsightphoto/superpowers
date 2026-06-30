@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from l5k_sim.ir import Project, Tag
+from l5k_sim.ir import Project, Tag, Member
 from l5k_sim.values import is_literal, parse_literal, parse_ref
 
 _TIMER = {"PRE": 0, "ACC": 0, "EN": False, "TT": False, "DN": False}
@@ -14,7 +14,7 @@ class TagDatabase:
     def __init__(self) -> None:
         self.controller: dict[str, Any] = {}
         self.programs: dict[str, dict[str, Any]] = {}
-        self._udts: dict[str, list[tuple[str, str]]] = {}
+        self._udts: dict[str, list[Member]] = {}
 
     @classmethod
     def from_project(cls, project: Project) -> "TagDatabase":
@@ -45,7 +45,10 @@ class TagDatabase:
         if dt == "COUNTER":
             return dict(_COUNTER)
         if data_type in self._udts:
-            return {m: self._init_type(mt, None) for m, mt in self._udts[data_type]}
+            out: dict[str, Any] = {}
+            for mem in self._udts[data_type]:
+                out[mem.name] = self._init_type(mem.data_type, None)
+            return out
         return 0  # unknown type — best-effort scalar
 
     # ---- resolution ----
