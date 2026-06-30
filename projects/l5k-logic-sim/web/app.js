@@ -21,12 +21,13 @@ async function boot() {
   sel.onchange = () => { current = sel.value; renderLadder(); paint(lastState); };
   current = sel.value;
   document.getElementById("step").onclick = async () => paint(await jpost("/api/step"));
-  document.getElementById("reset").onclick = async () => paint(await jpost("/api/reset"));
+  document.getElementById("reset").onclick = async () => { stopRun(); paint(await jpost("/api/reset")); };
   document.getElementById("run").onclick = startRun;
   document.getElementById("pause").onclick = stopRun;
   document.getElementById("forceForm").onsubmit = async (e) => {
     e.preventDefault();
     const v = document.getElementById("fVal").value;
+    if (v === "") return;
     paint(await jpost("/api/force", {scope: document.getElementById("fScope").value,
       operand: document.getElementById("fOp").value, value: coerce(v)}));
   };
@@ -51,12 +52,13 @@ function stopRun() {
 function selected() {
   const [p, r] = current.split("::", 2);
   const prog = IR.programs.find(x => x.name === p);
+  if (!prog) return {prog: null, routine: null};
   return {prog, routine: prog.routines.find(x => x.name === r)};
 }
 
 function renderLadder() {
   const {prog, routine} = selected();
-  if (!routine) return;
+  if (!prog || !routine) return;
   const host = document.getElementById("ladder");
   host.innerHTML = "";
   routine.rungs.forEach(rung => {
@@ -81,6 +83,7 @@ function paint(state) {
 
 function renderTags(tags) {
   const {prog} = selected();
+  if (!prog) return;
   const scope = tags.programs[prog.name] || {};
   const t = document.getElementById("tags"); t.innerHTML = "";
   for (const [name, val] of Object.entries(scope)) {

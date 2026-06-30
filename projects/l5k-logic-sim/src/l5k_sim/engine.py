@@ -93,6 +93,7 @@ class ScanEngine:
             prog = self.project.controller.programs[0]
         self.time_ms += self.scan_period_ms
         self.trace = {}
+        self.diagnostics = []
         self._apply_forces()
         if prog.main_routine:
             self.call_routine(prog.name, prog.main_routine)
