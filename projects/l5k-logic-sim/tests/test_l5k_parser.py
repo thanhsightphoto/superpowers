@@ -12,9 +12,39 @@ def test_controller_identity():
 
 def test_datatype_and_controller_tag():
     p = parse_l5k(FIXTURE)
-    assert any(dt.name == "briles_special_modes" for dt in p.controller.datatypes)
+    dt = next(dt for dt in p.controller.datatypes if dt.name == "briles_special_modes")
+    by_name = {m.name: m for m in dt.members}
+    # plain type-first member
+    assert by_name["active_mode"].data_type == "DINT"
+    assert by_name["active_mode"].bit_host is None and by_name["active_mode"].dim is None
+    # hidden host word retained as an ordinary plain member
+    assert by_name["ZZZZZZZZZZspecial_mo0"].data_type == "SINT"
+    # bit overlay
+    bit = by_name["out_ram_cycle_cmd"]
+    assert bit.data_type == "BIT" and bit.bit_host == "ZZZZZZZZZZspecial_mo0" and bit.bit_pos == 0
+    # controller tag still parses
     assert any(t.name == "global_estop" and t.scope == "controller"
                for t in p.controller.controller_tags)
+
+
+def test_datatype_plain_and_array_members(tmp_path):
+    text = (
+        'CONTROLLER C (ProcessorType := "1769-L30ERMS")\n'
+        '\tDATATYPE FaultRecord (FamilyType := NoFamily)\n'
+        '\t\tDINT TimeLow;\n'
+        '\t\tINT Code;\n'
+        '\t\tDINT Info[8] (Radix := Hex);\n'
+        '\tEND_DATATYPE\n'
+        'END_CONTROLLER\n'
+    )
+    f = tmp_path / "dt.L5K"
+    f.write_text(text)
+    p = parse_l5k(str(f))
+    dt = next(dt for dt in p.controller.datatypes if dt.name == "FaultRecord")
+    by_name = {m.name: m for m in dt.members}
+    assert set(by_name) == {"TimeLow", "Code", "Info"}        # nothing dropped
+    assert by_name["TimeLow"].data_type == "DINT"
+    assert by_name["Info"].data_type == "DINT" and by_name["Info"].dim == 8
 
 
 def test_aoi_with_params_and_logic():

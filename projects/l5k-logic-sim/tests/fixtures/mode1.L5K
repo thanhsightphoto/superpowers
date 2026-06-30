@@ -1,8 +1,9 @@
 CONTROLLER Sutherland_IPress_CompactGuard (ProcessorType := "1769-L30ERMS",
 	            Comment := "test fixture")
 	DATATYPE briles_special_modes (FamilyType := NoFamily)
-		active_mode : DINT;
-		out_ram_cycle_cmd : BIT;
+		DINT active_mode (Description := "current mode");
+		SINT ZZZZZZZZZZspecial_mo0 (Hidden := 1);
+		BIT out_ram_cycle_cmd ZZZZZZZZZZspecial_mo0 : 0 (Description := "ram cycle command");
 	END_DATATYPE
 	TAG
 		global_estop : BOOL (Description := "controller scope estop") := 0;

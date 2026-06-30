@@ -4,6 +4,7 @@ import re
 
 from l5k_sim.blocks import Block, scan_blocks, block_name
 from l5k_sim.decls import parse_routine_block, parse_tag_block
+from l5k_sim.scan import find_matching
 from l5k_sim.ir import (
     AOIDef, Controller, DataType, Member, Program, Project, Routine, Tag,
 )
@@ -53,10 +54,35 @@ def _build_datatype(block: Block) -> DataType:
     members: list[Member] = []
     for line in block.body_lines:
         s = line.strip()
-        if s.endswith(";") and " : " in s:
-            mname, rest = s[:-1].split(" : ", 1)
-            mtype = rest.strip().split(None, 1)[0].rstrip(";")
-            members.append(Member(mname.strip(), mtype))
+        if not s.endswith(";"):
+            continue
+        s = s[:-1].strip()
+        # strip the outer (attrs) group, if present
+        paren = s.find("(")
+        if paren != -1:
+            close = find_matching(s, paren)
+            s = (s[:paren] + s[close + 1:]).strip()
+        if not s:
+            continue
+        if s.startswith("BIT ") and ":" in s:
+            head, bitpos = s.split(":", 1)
+            toks = head.split()  # ["BIT", <name>, <host>]
+            if len(toks) >= 3 and bitpos.strip().lstrip("+-").isdigit():
+                members.append(Member(toks[1], "BIT", bit_host=toks[2], bit_pos=int(bitpos.strip())))
+                continue
+        # plain type-first member: "<TYPE> <name>[dim]?"
+        toks = s.split(None, 1)
+        if len(toks) != 2:
+            continue
+        mtype, mname = toks[0], toks[1].strip()
+        dim = None
+        if mname.endswith("]") and "[" in mname:
+            base, _, rest = mname.partition("[")
+            inner = rest[:-1].strip()
+            if inner.isdigit():
+                dim = int(inner)
+                mname = base.strip()
+        members.append(Member(mname, mtype, dim=dim))
     return DataType(name=name, members=members)
 
 
