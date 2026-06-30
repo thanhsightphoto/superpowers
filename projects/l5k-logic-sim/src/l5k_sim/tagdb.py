@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from l5k_sim.ir import Project, Tag, Member
+from l5k_sim.scan import split_top_level
 from l5k_sim.values import Bit, Index, VarIndex, is_literal, parse_literal, parse_ref
 
 _TIMER = {"PRE": 0, "ACC": 0, "EN": False, "TT": False, "DN": False}
@@ -51,8 +52,7 @@ class TagDatabase:
             return dict(_COUNTER)
         arr = _ARRAY.match(data_type.strip())
         if arr:
-            elem_type, n = arr.group(1), int(arr.group(2))
-            return [self._init_type(elem_type, None) for _ in range(n)]
+            return self._init_array(arr.group(1), int(arr.group(2)), initial)
         if data_type in self._udts:
             out: dict[str, Any] = {}
             for mem in self._udts[data_type]:
@@ -64,6 +64,23 @@ class TagDatabase:
                     out[mem.name] = self._init_type(mem.data_type, None)
             return out
         return 0  # unknown type — best-effort scalar
+
+    def _init_array(self, elem_type: str, n: int, initial: str | None) -> list:
+        out = [self._init_type(elem_type, None) for _ in range(n)]
+        if not initial:
+            return out
+        s = initial.strip()
+        if not (s.startswith("[") and s.endswith("]")):
+            return out
+        items = split_top_level(s[1:-1])
+        for i, item in enumerate(items):
+            if i >= n:
+                self.diagnostics.append(f"array initializer longer than dim {n}: {initial}")
+                break
+            item = item.strip()
+            if item:
+                out[i] = self._init_type(elem_type, item)
+        return out
 
     # ---- resolution ----
     def _container_for(self, scope: str, base: str) -> dict[str, Any]:

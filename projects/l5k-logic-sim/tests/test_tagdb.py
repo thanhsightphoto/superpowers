@@ -128,3 +128,23 @@ def test_array_tag_inits_to_list():
     counts = db.read("P", "counts")
     assert isinstance(counts, list) and len(counts) == 12 and counts == [0] * 12
     assert db.read("P", "counts[5]") == 0
+
+
+def test_aggregate_initializer_scalar():
+    tags = [Tag("counts", "INT[12]", "P", None, "[0,0,0,0,0,0,0,0,0,0,2,0]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "counts[10]") == 2
+    assert db.read("P", "counts[0]") == 0
+    assert db.read("P", "counts") == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]
+
+
+def test_aggregate_initializer_binary_bool():
+    tags = [Tag("flags", "BOOL[4]", "P", None, "[2#1,2#0,2#1,2#0]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "flags") == [True, False, True, False]
+
+
+def test_aggregate_initializer_short_pads_with_default():
+    tags = [Tag("counts", "INT[5]", "P", None, "[7,8]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "counts") == [7, 8, 0, 0, 0]
