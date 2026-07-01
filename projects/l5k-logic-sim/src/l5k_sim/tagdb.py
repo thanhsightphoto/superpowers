@@ -56,15 +56,7 @@ class TagDatabase:
         if arr:
             return self._init_array(arr.group(1), int(arr.group(2)), initial)
         if data_type in self._udts:
-            out: dict[str, Any] = {}
-            for mem in self._udts[data_type]:
-                if mem.bit_host is not None:
-                    out[mem.name] = False
-                elif mem.dim is not None:
-                    out[mem.name] = [self._init_type(mem.data_type, None) for _ in range(mem.dim)]
-                else:
-                    out[mem.name] = self._init_type(mem.data_type, None)
-            return out
+            return self._init_struct(data_type, initial)
         if data_type in self._aois:
             return {p.name: self._init_type(p.data_type, p.initial) for p in self._aois[data_type]}
         return 0  # unknown type — best-effort scalar
@@ -84,6 +76,38 @@ class TagDatabase:
             item = item.strip()
             if item:
                 out[i] = self._init_type(elem_type, item)
+        return out
+
+    def _init_struct(self, data_type: str, initial: str | None) -> dict:
+        members = self._udts[data_type]
+        out: dict[str, Any] = {}
+        for mem in members:
+            if mem.bit_host is not None:
+                out[mem.name] = False
+            elif mem.dim is not None:
+                out[mem.name] = [self._init_type(mem.data_type, None) for _ in range(mem.dim)]
+            else:
+                out[mem.name] = self._init_type(mem.data_type, None)
+        if initial:
+            s = initial.strip()
+            if s.startswith("[") and s.endswith("]"):
+                items = split_top_level(s[1:-1])
+                storage = [m for m in members if m.bit_host is None]
+                for i, mem in enumerate(storage):
+                    if i >= len(items):
+                        break
+                    item = items[i].strip()
+                    if not item:
+                        continue
+                    if mem.dim is not None:
+                        out[mem.name] = self._init_array(mem.data_type, mem.dim, item)
+                    elif mem.data_type in self._udts:
+                        out[mem.name] = self._init_struct(mem.data_type, item)
+                    else:
+                        out[mem.name] = self._init_type(mem.data_type, item)
+                if len(items) > len(storage):
+                    self.diagnostics.append(
+                        f"struct initializer longer than members ({len(storage)}): {initial}")
         return out
 
     # ---- resolution ----

@@ -172,3 +172,37 @@ def test_aoi_instance_inits_as_param_dict():
     assert isinstance(inst, dict) and set(inst) == {"EnableIn", "In", "Out"}
     assert db.read("P", "inst.In") == 0
     assert db.read("P", "inst.EnableIn") is False
+
+
+def test_udt_aggregate_decomposition_scalars():
+    udt = DataType("blk", [Member("host", "SINT"), Member("val", "REAL")])
+    tags = [Tag("b", "blk", "P", None, "[3,25.5]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "b.host") == 3
+    assert db.read("P", "b.val") == 25.5
+
+
+def test_udt_aggregate_decomposition_nested_udt():
+    inner = DataType("inner", [Member("a", "DINT"), Member("b", "DINT")])
+    outer = DataType("outer", [Member("x", "DINT"), Member("sub", "inner")])
+    tags = [Tag("o", "outer", "P", None, "[7,[10,20]]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [inner, outer], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "o.x") == 7
+    assert db.read("P", "o.sub.a") == 10
+    assert db.read("P", "o.sub.b") == 20
+
+
+def test_udt_aggregate_decomposition_array_member():
+    udt = DataType("rec", [Member("n", "DINT"), Member("data", "DINT", dim=3)])
+    tags = [Tag("r", "rec", "P", None, "[5,[1,2,3]]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "r.n") == 5
+    assert db.read("P", "r.data") == [1, 2, 3]
+
+
+def test_udt_aggregate_longer_than_members_diagnoses():
+    udt = DataType("blk", [Member("host", "SINT")])
+    tags = [Tag("b", "blk", "P", None, "[1,2,3]", None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "b.host") == 1
+    assert any("struct initializer longer" in d for d in db.diagnostics)
