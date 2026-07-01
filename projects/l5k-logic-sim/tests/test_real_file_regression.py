@@ -31,3 +31,17 @@ def test_array_tag_initializer_resolves_on_real_file():
     assert engine.db.read("MainProgram", "Cam_Cut_Dwell_Select[10]") == 2
     assert engine.db.read("MainProgram", "Cam_Cut_Dwell_Select[0]") == 0
     engine.run(5)  # must not raise
+
+
+def test_structured_tag_init_resolves_on_real_file():
+    engine = ScanEngine(parse_l5k(REAL))
+    db = engine.db
+    # UDT tag aggregate decomposition: real non-zero member values.
+    assert db.read("controller", "briles_special_modes.ram_position") == 359.0
+    assert db.read("controller", "briles_special_modes.lower_ko_valve_cmd") == 5000
+    # Bit-overlay derived from host word (special_mo_inputs_x = 4 -> bit 2 set).
+    assert db.read("controller", "briles_special_modes.ram_cycle_finished") is True
+    # AOI instance is a structured dict, not scalar 0.
+    inst = db.read("Lower_KO_Valve_Adapter", "scaler_inst")
+    assert isinstance(inst, dict) and "in_max" in inst
+    engine.run(5)  # must not raise

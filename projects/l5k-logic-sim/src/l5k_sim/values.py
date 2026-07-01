@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 _DEC_INT = re.compile(r"^[+-]?\d+$")
 _FLOAT = re.compile(r"^[+-]?\d+\.\d+$")
+_FLOAT_EXP = re.compile(r"^[+-]?\d+\.?\d*[eE][+-]?\d+$")
 _BIN = re.compile(r"^2#[01][01_]*$")
 _HEX = re.compile(r"^16#[0-9A-Fa-f][0-9A-Fa-f_]*$")
 _EXPR_CHARS = re.compile(r"[-+*/]|\s")
@@ -33,7 +34,7 @@ class Ref:
 
 def is_literal(s: str) -> bool:
     t = s.strip()
-    return bool(_DEC_INT.match(t) or _FLOAT.match(t) or _BIN.match(t) or _HEX.match(t))
+    return bool(_DEC_INT.match(t) or _FLOAT.match(t) or _FLOAT_EXP.match(t) or _BIN.match(t) or _HEX.match(t))
 
 
 def parse_literal(s: str) -> int | float | bool:
@@ -42,7 +43,7 @@ def parse_literal(s: str) -> int | float | bool:
         return int(t[2:].replace("_", ""), 2)
     if _HEX.match(t):
         return int(t[3:].replace("_", ""), 16)
-    if _FLOAT.match(t):
+    if _FLOAT.match(t) or _FLOAT_EXP.match(t):
         return float(t)
     return int(t)
 
