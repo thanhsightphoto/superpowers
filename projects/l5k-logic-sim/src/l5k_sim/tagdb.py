@@ -108,6 +108,9 @@ class TagDatabase:
                 if len(items) > len(storage):
                     self.diagnostics.append(
                         f"struct initializer longer than members ({len(storage)}): {initial}")
+        for mem in members:
+            if mem.bit_host is not None and isinstance(out.get(mem.bit_host), int):
+                out[mem.name] = bool((int(out[mem.bit_host]) >> (mem.bit_pos or 0)) & 1)
         return out
 
     # ---- resolution ----

@@ -206,3 +206,18 @@ def test_udt_aggregate_longer_than_members_diagnoses():
     db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
     assert db.read("P", "b.host") == 1
     assert any("struct initializer longer" in d for d in db.diagnostics)
+
+
+def test_bit_overlay_derived_from_host_word():
+    udt = DataType("bt", [
+        Member("host", "SINT"),
+        Member("b0", "BIT", bit_host="host", bit_pos=0),
+        Member("b1", "BIT", bit_host="host", bit_pos=1),
+        Member("b2", "BIT", bit_host="host", bit_pos=2),
+    ])
+    tags = [Tag("t", "bt", "P", None, "[3]", None)]   # host = 3 -> bits 0,1 set; bit 2 clear
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [udt], [], [Program("P", None, tags, [])])))
+    assert db.read("P", "t.host") == 3
+    assert db.read("P", "t.b0") is True
+    assert db.read("P", "t.b1") is True
+    assert db.read("P", "t.b2") is False
