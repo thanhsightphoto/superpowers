@@ -45,3 +45,14 @@ def test_structured_tag_init_resolves_on_real_file():
     inst = db.read("Lower_KO_Valve_Adapter", "scaler_inst")
     assert isinstance(inst, dict) and "in_max" in inst
     engine.run(5)  # must not raise
+
+
+def test_aoi_chain_computes_on_real_file():
+    engine = ScanEngine(parse_l5k(REAL))
+    engine.run(5)  # must not raise
+    scope = "Lower_KO_Valve_Adapter"
+    # max_dint -> min_dint clamp speed to [0, 100]; scaler_dint maps [0,100] -> [0,5000].
+    sc = engine.db.read(scope, "speed_clamped")
+    mg = engine.db.read(scope, "magnitude")
+    assert 0 <= sc <= 100          # min/max AOIs clamped correctly
+    assert mg == sc * 50           # scaler_dint: out = in * (5000-0)/(100-0)
