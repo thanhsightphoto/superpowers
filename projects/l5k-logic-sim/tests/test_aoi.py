@@ -51,3 +51,22 @@ def test_aoi_non_dict_instance_skips():
     e = ScanEngine(proj)
     e._eval_instruction("P", Instruction("dbl", ["inst", "src", "dst"], "dbl(inst,src,dst)"), True)
     assert any("dbl" in d for d in e.diagnostics)
+
+
+def test_aoi_logic_computes_output_in_instance():
+    e = ScanEngine(_project())
+    _call(e)
+    assert e.db.read("P", "inst.out") == 10      # CPT: out = in * 2 = 5 * 2
+
+
+def test_aoi_copies_outputs_back_to_caller():
+    e = ScanEngine(_project())
+    _call(e)
+    assert e.db.read("P", "dst") == 10           # 'out' copied back to the 'dst' argument
+
+
+def test_aoi_disabled_does_not_run_logic():
+    e = ScanEngine(_project())
+    _call(e, power=False)
+    assert e.db.read("P", "inst.out") == 0       # Logic skipped when unpowered
+    assert e.db.read("P", "dst") == 0

@@ -79,6 +79,19 @@ class ScanEngine:
                 inst[p.name] = self._operand(scope, arg)
         if "EnableIn" in inst:
             inst["EnableIn"] = bool(power_in)
+        if power_in and aoi.logic is not None:
+            key = f"__aoi__/{instr.mnemonic}"
+            self.db.programs[key] = inst
+            try:
+                for rung in aoi.logic.rungs:
+                    self.eval_rung(key, rung, aoi.logic.name)
+            finally:
+                self.db.programs.pop(key, None)
+        if "EnableOut" in inst:
+            inst["EnableOut"] = bool(power_in)
+        for p, arg in zip(call_params, args):
+            if p.usage in ("Output", "InOut"):
+                self.db.write(scope, arg, inst[p.name])
         return power_in
 
     def eval_rung(self, scope: str, rung: Rung, routine_name: str) -> None:
