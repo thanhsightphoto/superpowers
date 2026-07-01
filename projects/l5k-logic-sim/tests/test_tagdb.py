@@ -1,4 +1,4 @@
-from l5k_sim.ir import Controller, DataType, Member, Program, Project, Tag
+from l5k_sim.ir import AOIDef, Controller, DataType, Member, Program, Project, Tag
 from l5k_sim.tagdb import TagDatabase
 
 
@@ -158,3 +158,17 @@ def test_whole_array_write_copies_not_aliases():
     assert db.read("P", "a") == [1, 2, 3]    # source must be unchanged
     assert db.read("P", "b") == [99, 2, 3]
     assert db.read("P", "a") is not db.read("P", "b")
+
+
+def test_aoi_instance_inits_as_param_dict():
+    aoi = AOIDef("scale2", [
+        Tag("EnableIn", "BOOL", "scale2", "Input", None, None),
+        Tag("In", "DINT", "scale2", "Input", None, None),
+        Tag("Out", "DINT", "scale2", "Output", None, None),
+    ], None)
+    tags = [Tag("inst", "scale2", "P", None, None, None)]
+    db = TagDatabase.from_project(Project(Controller("C", "x", [], [], [aoi], [Program("P", None, tags, [])])))
+    inst = db.read("P", "inst")
+    assert isinstance(inst, dict) and set(inst) == {"EnableIn", "In", "Out"}
+    assert db.read("P", "inst.In") == 0
+    assert db.read("P", "inst.EnableIn") is False

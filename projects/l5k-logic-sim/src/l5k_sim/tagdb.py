@@ -18,12 +18,14 @@ class TagDatabase:
         self.controller: dict[str, Any] = {}
         self.programs: dict[str, dict[str, Any]] = {}
         self._udts: dict[str, list[Member]] = {}
+        self._aois: dict[str, list[Tag]] = {}
         self.diagnostics: list[str] = []
 
     @classmethod
     def from_project(cls, project: Project) -> "TagDatabase":
         db = cls()
         db._udts = {dt.name: dt.members for dt in project.controller.datatypes}
+        db._aois = {a.name: a.parameters for a in project.controller.aois}
         for t in project.controller.controller_tags:
             db.controller[t.name] = db._init_value(t)
         for prog in project.controller.programs:
@@ -63,6 +65,8 @@ class TagDatabase:
                 else:
                     out[mem.name] = self._init_type(mem.data_type, None)
             return out
+        if data_type in self._aois:
+            return {p.name: self._init_type(p.data_type, p.initial) for p in self._aois[data_type]}
         return 0  # unknown type — best-effort scalar
 
     def _init_array(self, elem_type: str, n: int, initial: str | None) -> list:
