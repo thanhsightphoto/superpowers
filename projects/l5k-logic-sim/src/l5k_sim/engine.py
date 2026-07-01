@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from l5k_sim.ir import Branch, Instruction, Program, Project, Routine, Rung
+from l5k_sim.ir import AOIDef, Branch, Instruction, Program, Project, Routine, Rung
 from l5k_sim import instructions as _ins
 from l5k_sim.expr import eval_expr
 from l5k_sim.tagdb import TagDatabase
@@ -17,6 +17,7 @@ class ScanEngine:
         self.time_ms = 0
         self.diagnostics: list[str] = []
         self._programs: dict[str, Program] = {p.name: p for p in project.controller.programs}
+        self._aois: dict[str, AOIDef] = {a.name: a for a in project.controller.aois}
         self.forced: dict[tuple[str, str], Any] = {}
         self.trace: dict[str, bool] = {}
 
@@ -44,6 +45,12 @@ class ScanEngine:
     def _eval_instruction(self, scope: str, instr: Instruction, power_in: bool) -> bool:
         handler = _ins.HANDLERS.get(instr.mnemonic)
         if handler is None:
+            if instr.mnemonic in self._aois:
+                try:
+                    return self.invoke_aoi(scope, instr, power_in)
+                except Exception as exc:
+                    self.diagnostics.append(f"AOI {instr.mnemonic} in {scope} raised: {exc}")
+                    return power_in
             self.diagnostics.append(f"unsupported instruction {instr.mnemonic} in {scope}")
             return power_in
         try:
@@ -51,6 +58,28 @@ class ScanEngine:
         except Exception as exc:
             self.diagnostics.append(f"instruction {instr.mnemonic} in {scope} raised: {exc}")
             return power_in
+
+    def invoke_aoi(self, scope: str, instr: Instruction, power_in: bool) -> bool:
+        aoi = self._aois[instr.mnemonic]
+        inst = self.db.read(scope, instr.operands[0])
+        if not isinstance(inst, dict):
+            self.diagnostics.append(
+                f"AOI {instr.mnemonic}: instance {instr.operands[0]} is not structured")
+            return power_in
+        call_params = [p for p in aoi.parameters
+                       if p.usage in ("Input", "Output", "InOut")
+                       and p.name not in ("EnableIn", "EnableOut")]
+        args = instr.operands[1:]
+        if len(args) != len(call_params):
+            self.diagnostics.append(
+                f"AOI {instr.mnemonic}: {len(args)} args vs {len(call_params)} params")
+            return power_in
+        for p, arg in zip(call_params, args):
+            if p.usage in ("Input", "InOut"):
+                inst[p.name] = self._operand(scope, arg)
+        if "EnableIn" in inst:
+            inst["EnableIn"] = bool(power_in)
+        return power_in
 
     def eval_rung(self, scope: str, rung: Rung, routine_name: str) -> None:
         self.eval_elements(scope, rung.elements, True, f"{scope}/{routine_name}/{rung.number}")
