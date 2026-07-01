@@ -56,3 +56,7 @@ def test_aoi_chain_computes_on_real_file():
     mg = engine.db.read(scope, "magnitude")
     assert 0 <= sc <= 100          # min/max AOIs clamped correctly
     assert mg == sc * 50           # scaler_dint: out = in * (5000-0)/(100-0)
+    # scaler_inst.in_max is bound from the literal call argument (100) every scan,
+    # so it is non-zero regardless of machine state — proves binding ran on the real file.
+    scaler_inst = engine.db.read(scope, "scaler_inst")
+    assert scaler_inst["in_max"] == 100
