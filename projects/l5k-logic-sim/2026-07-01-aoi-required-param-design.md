@@ -10,8 +10,11 @@ AOI invocation (Plan 7) binds call arguments to an AOI's parameters positionally
 computing "call parameters" as `usage in (Input, Output, InOut)` minus
 `EnableIn`/`EnableOut`. That heuristic is wrong for AOIs with **optional**
 parameters: `MisFeed` has 13 such params but only 12 call arguments, because one
-input parameter (`Input`) is marked `Required := No` and is omitted from the call.
+input parameter (`Stopped`) is marked `Required := No` and is omitted from the call.
 Result: all 16 `MisFeed` call sites skip with a count-mismatch diagnostic.
+(Correction: an earlier draft named this param `Input`; the actually-omitted
+optional input is `Stopped`. The implementation is name-agnostic — it drives off
+the parsed `Required` flag — so this does not affect the code.)
 
 Verified in the L5K: every AOI parameter carries a `Required := Yes|No` attribute.
 `EnableIn`/`EnableOut` are `Required := No`; the visible call parameters are
