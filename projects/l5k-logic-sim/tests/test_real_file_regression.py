@@ -77,3 +77,12 @@ def test_misfeed_binds_on_real_file():
     engine.scan("MainProgram")  # MainProgram hosts the 16 MisFeed calls; must not raise
     assert not any("MisFeed" in d and "args vs" in d for d in engine.diagnostics), \
         [d for d in engine.diagnostics if "MisFeed" in d]
+
+
+def test_no_io_subscript_degradation_on_real_file():
+    engine = ScanEngine(parse_l5k(REAL))
+    for prog in engine.project.controller.programs:
+        engine.scan(prog.name)  # must not raise
+        bad = [d for d in engine.diagnostics
+               if "not subscriptable" in d or "does not support item assignment" in d]
+        assert not bad, f"{prog.name}: I/O subscript degradations remain: {bad[:5]}"
