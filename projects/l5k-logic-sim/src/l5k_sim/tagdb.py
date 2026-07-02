@@ -9,7 +9,7 @@ from l5k_sim.scan import split_top_level
 from l5k_sim.values import Bit, Index, VarIndex, is_literal, parse_literal, parse_ref
 
 _TIMER = {"PRE": 0, "ACC": 0, "EN": False, "TT": False, "DN": False}
-_COUNTER = {"PRE": 0, "ACC": 0, "CU": False, "CD": False, "DN": False, "prev_cu": False}
+_COUNTER = {"PRE": 0, "ACC": 0, "CU": False, "CD": False, "DN": False, "prev_cu": False, "prev_cd": False}
 _ARRAY = re.compile(r"^(\w+)\[(\d+)\]$")
 
 

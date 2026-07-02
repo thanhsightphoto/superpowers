@@ -106,7 +106,7 @@ def _res(engine, scope, instr, power_in):
         name = instr.operands[0]
         struct = engine.db.read(scope, name)
         if isinstance(struct, dict):
-            for member in ("ACC", "DN", "TT", "EN", "CU", "CD", "prev_cu"):
+            for member in ("ACC", "DN", "TT", "EN", "CU", "CD", "prev_cu", "prev_cd"):
                 if member in struct:
                     engine.db.write(scope, f"{name}.{member}", 0 if member == "ACC" else False)
     return power_in
@@ -122,6 +122,21 @@ def _ctu(engine, scope, instr, power_in):
         acc += 1
         engine.db.write(scope, f"{name}.ACC", acc)
     engine.db.write(scope, f"{name}.prev_cu", bool(power_in))
+    done = acc >= pre
+    engine.db.write(scope, f"{name}.DN", done)
+    return done
+
+
+@register("CTD")
+def _ctd(engine, scope, instr, power_in):
+    name = instr.operands[0]
+    pre = int(engine.db.read(scope, f"{name}.PRE"))
+    acc = int(engine.db.read(scope, f"{name}.ACC"))
+    prev = bool(engine.db.read(scope, f"{name}.prev_cd"))
+    if power_in and not prev:
+        acc -= 1
+        engine.db.write(scope, f"{name}.ACC", acc)
+    engine.db.write(scope, f"{name}.prev_cd", bool(power_in))
     done = acc >= pre
     engine.db.write(scope, f"{name}.DN", done)
     return done

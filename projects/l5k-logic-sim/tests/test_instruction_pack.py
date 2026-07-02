@@ -98,3 +98,17 @@ def test_rto_res_clears():
     e.db.write("P", "t.DN", True)
     _run(e, "RES", ["t"], power=True)
     assert e.db.read("P", "t.ACC") == 0 and e.db.read("P", "t.DN") is False
+
+
+def test_ctd_decrements_on_edge():
+    e = _engine([Tag("c", "COUNTER", "P", None, None, None)])
+    e.db.write("P", "c.ACC", 5)
+    e.db.write("P", "c.PRE", 3)
+    _run(e, "CTD", ["c", "?", "?"], power=True)    # false->true edge: 5 -> 4
+    assert e.db.read("P", "c.ACC") == 4
+    _run(e, "CTD", ["c", "?", "?"], power=True)    # no new edge: stays 4
+    assert e.db.read("P", "c.ACC") == 4
+    _run(e, "CTD", ["c", "?", "?"], power=False)   # reset edge
+    _run(e, "CTD", ["c", "?", "?"], power=True)    # edge: 4 -> 3
+    assert e.db.read("P", "c.ACC") == 3
+    assert e.db.read("P", "c.DN") is True          # 3 >= 3
