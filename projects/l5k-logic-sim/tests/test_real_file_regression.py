@@ -70,3 +70,10 @@ def test_instruction_pack_no_longer_unsupported_on_real_file():
         unsup = {d.split("unsupported instruction", 1)[1].split(" in ")[0].strip()
                  for d in engine.diagnostics if "unsupported instruction" in d}
         assert not (pack & unsup), f"{prog.name}: still unsupported {pack & unsup}"
+
+
+def test_misfeed_binds_on_real_file():
+    engine = ScanEngine(parse_l5k(REAL))
+    engine.scan("MainProgram")  # MainProgram hosts the 16 MisFeed calls; must not raise
+    assert not any("MisFeed" in d and "args vs" in d for d in engine.diagnostics), \
+        [d for d in engine.diagnostics if "MisFeed" in d]
