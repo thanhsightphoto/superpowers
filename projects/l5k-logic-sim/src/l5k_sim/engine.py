@@ -66,9 +66,12 @@ class ScanEngine:
             self.diagnostics.append(
                 f"AOI {instr.mnemonic}: instance {instr.operands[0]} is not structured")
             return power_in
-        call_params = [p for p in aoi.parameters
-                       if p.usage in ("Input", "Output", "InOut")
-                       and p.name not in ("EnableIn", "EnableOut")]
+        if any(p.required is not None for p in aoi.parameters):
+            call_params = [p for p in aoi.parameters if p.required]
+        else:
+            call_params = [p for p in aoi.parameters
+                           if p.usage in ("Input", "Output", "InOut")
+                           and p.name not in ("EnableIn", "EnableOut")]
         args = instr.operands[1:]
         if len(args) != len(call_params):
             self.diagnostics.append(

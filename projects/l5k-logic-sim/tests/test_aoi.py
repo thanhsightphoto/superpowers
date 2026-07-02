@@ -70,3 +70,36 @@ def test_aoi_disabled_does_not_run_logic():
     _call(e, power=False)
     assert e.db.read("P", "inst.out") == 0       # Logic skipped when unpowered
     assert e.db.read("P", "dst") == 0
+
+
+def _aoi_with_optional():
+    # required params: in, out ; non-required extra input: spare (omitted from calls)
+    params = [
+        Tag("EnableIn", "BOOL", "opt", "Input", None, None, required=False),
+        Tag("in", "DINT", "opt", "Input", None, None, required=True),
+        Tag("spare", "DINT", "opt", "Input", None, None, required=False),
+        Tag("out", "DINT", "opt", "Output", None, None, required=True),
+    ]
+    logic = Routine("Logic", None, [
+        Rung(0, None, [Instruction("MOVE", ["in", "out"], "MOVE(in,out)")], "MOVE(in,out)"),
+    ])
+    return AOIDef("opt", params, logic)
+
+
+def test_aoi_binds_only_required_params():
+    prog_tags = [Tag("inst", "opt", "P", None, None, None),
+                 Tag("src", "DINT", "P", None, "7", None),
+                 Tag("dst", "DINT", "P", None, "0", None)]
+    e = ScanEngine(Project(Controller("C", "x", [], [], [_aoi_with_optional()],
+                                      [Program("P", None, prog_tags, [])])))
+    # 2 args match the 2 required params (in, out); the non-required 'spare' is skipped
+    e._eval_instruction("P", Instruction("opt", ["inst", "src", "dst"], "opt(inst,src,dst)"), True)
+    assert e.db.read("P", "dst") == 7
+    assert not any("args vs" in d for d in e.diagnostics)
+
+
+def test_aoi_fallback_when_no_required_info():
+    # params have required=None -> usage heuristic still applies (dbl from earlier helper)
+    e = ScanEngine(_project())   # _project() uses _aoi_dbl() whose params have required=None
+    _call(e)
+    assert e.db.read("P", "dst") == 10
