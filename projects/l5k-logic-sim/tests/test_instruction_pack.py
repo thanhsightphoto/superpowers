@@ -65,3 +65,36 @@ def test_cop_independent_and_bounds():
     assert e.db.read("P", "d[0]") == 1        # copy is independent of source
     _run(e, "COP", ["s", "d", "99"])          # length beyond array bounds
     assert any("out of range" in x for x in e.diagnostics)
+
+
+def test_tof_holds_then_clears():
+    e = _engine([Tag("t", "TIMER", "P", None, None, None)])
+    e.db.write("P", "t.PRE", 30)
+    _run(e, "TOF", ["t", "?", "?"], power=True)
+    assert e.db.read("P", "t.DN") is True and e.db.read("P", "t.ACC") == 0
+    _run(e, "TOF", ["t", "?", "?"], power=False)  # ACC 10
+    _run(e, "TOF", ["t", "?", "?"], power=False)  # ACC 20
+    assert e.db.read("P", "t.DN") is True          # still timing
+    _run(e, "TOF", ["t", "?", "?"], power=False)  # ACC 30 -> elapsed
+    assert e.db.read("P", "t.DN") is False
+
+
+def test_rto_accumulates_and_retains():
+    e = _engine([Tag("t", "TIMER", "P", None, None, None)])
+    e.db.write("P", "t.PRE", 30)
+    _run(e, "RTO", ["t", "?", "?"], power=True)   # ACC 10
+    _run(e, "RTO", ["t", "?", "?"], power=True)   # ACC 20
+    assert e.db.read("P", "t.ACC") == 20
+    _run(e, "RTO", ["t", "?", "?"], power=False)  # retains, not reset
+    assert e.db.read("P", "t.ACC") == 20
+    _run(e, "RTO", ["t", "?", "?"], power=True)   # ACC 30 -> done
+    assert e.db.read("P", "t.DN") is True
+
+
+def test_rto_res_clears():
+    e = _engine([Tag("t", "TIMER", "P", None, None, None)])
+    e.db.write("P", "t.PRE", 30)
+    e.db.write("P", "t.ACC", 30)
+    e.db.write("P", "t.DN", True)
+    _run(e, "RES", ["t"], power=True)
+    assert e.db.read("P", "t.ACC") == 0 and e.db.read("P", "t.DN") is False

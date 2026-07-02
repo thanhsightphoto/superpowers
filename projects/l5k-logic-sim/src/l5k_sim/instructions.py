@@ -232,3 +232,44 @@ def _cop(engine, scope, instr, power_in):
             engine.diagnostics.append(f"COP out of range in {scope}")
             break
     return power_in
+
+
+@register("TOF")
+def _tof(engine, scope, instr, power_in):
+    name = instr.operands[0]
+    pre = int(engine.db.read(scope, f"{name}.PRE"))
+    acc = int(engine.db.read(scope, f"{name}.ACC"))
+    if power_in:
+        engine.db.write(scope, f"{name}.EN", True)
+        engine.db.write(scope, f"{name}.DN", True)
+        engine.db.write(scope, f"{name}.TT", False)
+        engine.db.write(scope, f"{name}.ACC", 0)
+        return True
+    engine.db.write(scope, f"{name}.EN", False)
+    if acc < pre:
+        acc = min(pre, acc + engine.scan_period_ms)
+        engine.db.write(scope, f"{name}.ACC", acc)
+    dn = acc < pre
+    engine.db.write(scope, f"{name}.DN", dn)
+    engine.db.write(scope, f"{name}.TT", dn)
+    return dn
+
+
+@register("RTO")
+def _rto(engine, scope, instr, power_in):
+    name = instr.operands[0]
+    pre = int(engine.db.read(scope, f"{name}.PRE"))
+    acc = int(engine.db.read(scope, f"{name}.ACC"))
+    if power_in:
+        engine.db.write(scope, f"{name}.EN", True)
+        if acc < pre:
+            acc = min(pre, acc + engine.scan_period_ms)
+            engine.db.write(scope, f"{name}.ACC", acc)
+        done = acc >= pre
+        engine.db.write(scope, f"{name}.DN", done)
+        engine.db.write(scope, f"{name}.TT", not done)
+        return done
+    # unpowered: retain ACC and DN (RES releases)
+    engine.db.write(scope, f"{name}.EN", False)
+    engine.db.write(scope, f"{name}.TT", False)
+    return acc >= pre
