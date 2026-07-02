@@ -48,3 +48,20 @@ def test_mod_by_zero_degrades():
     _run(e, "MOD", ["a", "b", "d"])
     assert e.db.read("P", "d") == 9
     assert any("MOD by zero" in x for x in e.diagnostics)
+
+
+def test_cop_copies_elements():
+    e = _engine([Tag("s", "DINT[3]", "P", None, "[1,2,3]", None),
+                 Tag("d", "DINT[3]", "P", None, "[0,0,0]", None)])
+    _run(e, "COP", ["s", "d", "3"])
+    assert e.db.read("P", "d") == [1, 2, 3]
+
+
+def test_cop_independent_and_bounds():
+    e = _engine([Tag("s", "DINT[3]", "P", None, "[1,2,3]", None),
+                 Tag("d", "DINT[3]", "P", None, "[0,0,0]", None)])
+    _run(e, "COP", ["s", "d", "3"])
+    e.db.write("P", "s[0]", 99)
+    assert e.db.read("P", "d[0]") == 1        # copy is independent of source
+    _run(e, "COP", ["s", "d", "99"])          # length beyond array bounds
+    assert any("out of range" in x for x in e.diagnostics)

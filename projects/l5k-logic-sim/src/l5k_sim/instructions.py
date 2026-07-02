@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import operator as _op
 from typing import Callable
 
@@ -211,4 +212,23 @@ def _mod(engine, scope, instr, power_in):
             engine.diagnostics.append(f"MOD by zero in {scope}")
             return power_in
         engine.db.write(scope, instr.operands[2], a - b * int(a / b))
+    return power_in
+
+
+@register("COP")
+def _cop(engine, scope, instr, power_in):
+    if not power_in:
+        return power_in
+    src = engine.db.read(scope, instr.operands[0])
+    dst = engine.db.read(scope, instr.operands[1])
+    n = int(engine._operand(scope, instr.operands[2]))
+    if not isinstance(src, list) or not isinstance(dst, list):
+        engine.diagnostics.append(f"COP non-array operand in {scope}")
+        return power_in
+    for i in range(n):
+        if i < len(src) and i < len(dst):
+            dst[i] = copy.deepcopy(src[i])
+        else:
+            engine.diagnostics.append(f"COP out of range in {scope}")
+            break
     return power_in
