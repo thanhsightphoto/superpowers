@@ -9,6 +9,7 @@ from l5k_sim.scan import find_matching
 
 _DESC_RE = re.compile(r'Description\s*:=\s*"((?:[^"\\]|\\.)*)"')
 _USAGE_RE = re.compile(r'Usage\s*:=\s*(\w+)')
+_REQUIRED_RE = re.compile(r'Required\s*:=\s*(Yes|No)')
 
 
 def _join_statements(lines: list[str]) -> list[str]:
@@ -50,9 +51,10 @@ def parse_tag_block(block: Block, scope: str) -> list[Tag]:
         if cut != -1:
             initial = rest[cut + 2:].strip()
             rest = rest[:cut].strip()
-        # attribute group (...) carries Description / Usage
+        # attribute group (...) carries Description / Usage / Required
         description = None
         usage = None
+        required = None
         paren = rest.find("(")
         if paren != -1:
             close = find_matching(rest, paren)
@@ -64,9 +66,12 @@ def parse_tag_block(block: Block, scope: str) -> list[Tag]:
             mu = _USAGE_RE.search(attrs)
             if mu:
                 usage = mu.group(1)
+            mr = _REQUIRED_RE.search(attrs)
+            if mr:
+                required = (mr.group(1) == "Yes")
         else:
             data_type = rest.strip()
-        tags.append(Tag(name, data_type, scope, usage, initial, description))
+        tags.append(Tag(name, data_type, scope, usage, initial, description, required))
     return tags
 
 

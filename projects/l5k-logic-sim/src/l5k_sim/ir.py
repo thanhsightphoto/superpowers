@@ -41,6 +41,7 @@ class Tag:
     usage: str | None
     initial: str | None
     description: str | None
+    required: bool | None = None
 
 
 @dataclass
@@ -117,11 +118,13 @@ def _element_from_dict(d: dict) -> RungElement:
 
 def _tag_to_dict(t: Tag) -> dict:
     return {"name": t.name, "data_type": t.data_type, "scope": t.scope,
-            "usage": t.usage, "initial": t.initial, "description": t.description}
+            "usage": t.usage, "initial": t.initial, "description": t.description,
+            "required": t.required}
 
 
 def _tag_from_dict(d: dict) -> Tag:
-    return Tag(d["name"], d["data_type"], d["scope"], d["usage"], d["initial"], d["description"])
+    return Tag(d["name"], d["data_type"], d["scope"], d["usage"], d["initial"],
+               d["description"], d.get("required"))
 
 
 def _rung_to_dict(r: Rung) -> dict:

@@ -115,3 +115,24 @@ def test_malformed_rung_degrades_to_diagnostic(tmp_path):
     assert routine.rungs[1].elements == []                   # malformed rung degraded
     assert routine.rungs[1].raw == "XIC(a)$bad(b)"           # raw text preserved
     assert any("unparseable rung" in d for d in proj.diagnostics)
+
+
+def test_parse_required_attribute(tmp_path):
+    text = (
+        'CONTROLLER C (ProcessorType := "1769-L30ERMS")\n'
+        '\tADD_ON_INSTRUCTION_DEFINITION myaoi (Class := Standard)\n'
+        '\t\tPARAMETERS\n'
+        '\t\t\tEnableIn : BOOL (Usage := Input, Required := No);\n'
+        '\t\t\ta : DINT (Usage := Input, Required := Yes);\n'
+        '\t\t\tb : DINT (Usage := Input, Required := No);\n'
+        '\t\tEND_PARAMETERS\n'
+        '\tEND_ADD_ON_INSTRUCTION_DEFINITION\n'
+        'END_CONTROLLER\n'
+    )
+    f = tmp_path / "aoi.L5K"
+    f.write_text(text)
+    p = parse_l5k(str(f))
+    params = {pm.name: pm for pm in p.controller.aois[0].parameters}
+    assert params["EnableIn"].required is False
+    assert params["a"].required is True
+    assert params["b"].required is False

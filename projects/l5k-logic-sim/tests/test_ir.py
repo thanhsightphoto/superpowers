@@ -48,3 +48,12 @@ def test_branch_round_trips_with_kind_discriminator():
 def test_unknown_element_kind_raises():
     with pytest.raises(ValueError):
         _element_from_dict({"kind": "bogus"})
+
+
+def test_tag_required_survives_round_trip():
+    t = Tag("p", "DINT", "aoi", "Input", None, None, required=True)
+    aoi = AOIDef("aoi", [t], None)
+    prog = Program("P", "Main", [], [])
+    p = Project(Controller("C", "x", [], [], [aoi], [prog]))
+    back = project_from_dict(json.loads(json.dumps(project_to_dict(p))))
+    assert back.controller.aois[0].parameters[0].required is True
