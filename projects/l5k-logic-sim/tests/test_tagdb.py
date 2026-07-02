@@ -221,3 +221,44 @@ def test_bit_overlay_derived_from_host_word():
     assert db.read("P", "t.b0") is True
     assert db.read("P", "t.b1") is True
     assert db.read("P", "t.b2") is False
+
+
+def _db(tags, datatypes=None):
+    prog = Program("P", None, tags, [])
+    return TagDatabase.from_project(
+        Project(Controller("C", "x", [], datatypes or [], [], [prog])))
+
+
+def test_unmodeled_type_tag_member_access_is_forgiving():
+    db = _db([Tag("relay", "REDUNDANT_OUTPUT", "P", None, None, None)])
+    assert db.read("P", "relay.O1") == 0           # forgiving default, no raise
+    db.write("P", "relay.O1", True)
+    assert db.read("P", "relay.O1") is True
+
+
+def test_colon_io_tag_auto_creates_forgiving():
+    db = _db([])
+    assert db.read("P", "Local:4:I.Data[1]") == 0
+    db.write("P", "Local:4:I.Data[1]", 55)
+    assert db.read("P", "Local:4:I.Data[1]") == 55
+
+
+def test_io_bit_subpath_default_and_hold():
+    db = _db([])
+    assert db.read("P", "Local:1:I.Data.5") is False
+    db.write("P", "Local:1:I.Data.5", True)
+    assert db.read("P", "Local:1:I.Data.5") is True
+
+
+def test_bare_undeclared_read_still_zero():
+    db = _db([])
+    assert db.read("P", "never_written") == 0
+
+
+def test_known_udt_stays_strict():
+    from l5k_sim.tagdb import IOStub
+    udt = DataType("blk", [Member("word", "DINT")])
+    db = _db([Tag("u", "blk", "P", None, None, None)], datatypes=[udt])
+    db.write("P", "u.word", 7)
+    assert db.read("P", "u.word") == 7
+    assert not isinstance(db.programs["P"]["u"], IOStub)

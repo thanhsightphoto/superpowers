@@ -13,6 +13,27 @@ _COUNTER = {"PRE": 0, "ACC": 0, "CU": False, "CD": False, "DN": False, "prev_cu"
 _ARRAY = re.compile(r"^(\w+)\[(\d+)\]$")
 
 
+class IOStub(dict):
+    """Forgiving store for an unmodeled I/O / module-defined tag.
+
+    Keys are canonical sub-path strings; missing keys read as defaults.
+    """
+
+
+def _canon(path) -> str:
+    out = ""
+    for seg in path:
+        if isinstance(seg, Index):
+            out += f"[{seg.i}]"
+        elif isinstance(seg, VarIndex):
+            out += f"[{seg.name}]"
+        elif isinstance(seg, Bit):
+            out += f".{seg.n}"
+        else:  # member str
+            out += (f".{seg}" if out else str(seg))
+    return out
+
+
 class TagDatabase:
     def __init__(self) -> None:
         self.controller: dict[str, Any] = {}
@@ -59,7 +80,7 @@ class TagDatabase:
             return self._init_struct(data_type, initial)
         if data_type in self._aois:
             return {p.name: self._init_type(p.data_type, p.initial) for p in self._aois[data_type]}
-        return 0  # unknown type — best-effort scalar
+        return IOStub()  # unmodeled type -> forgiving, forceable I/O stub
 
     def _init_array(self, elem_type: str, n: int, initial: str | None) -> list:
         out = [self._init_type(elem_type, None) for _ in range(n)]
@@ -121,7 +142,7 @@ class TagDatabase:
         if base in self.controller:
             return self.controller
         # auto-create in program scope so writes to undeclared tags don't crash
-        prog[base] = 0
+        prog[base] = IOStub()
         return prog
 
     def read(self, scope: str, operand: str) -> Any:
@@ -130,6 +151,11 @@ class TagDatabase:
         ref = parse_ref(operand)
         container = self._container_for(scope, ref.base)
         val = container[ref.base]
+        if isinstance(val, IOStub):
+            if not ref.path:
+                return 0
+            default = False if isinstance(ref.path[-1], Bit) else 0
+            return val.get(_canon(ref.path), default)
         for seg in ref.path:
             if isinstance(seg, Bit):
                 return bool((int(val) >> seg.n) & 1)
@@ -148,6 +174,13 @@ class TagDatabase:
     def write(self, scope: str, operand: str, value: Any) -> None:
         ref = parse_ref(operand)
         container = self._container_for(scope, ref.base)
+        base_val = container[ref.base]
+        if isinstance(base_val, IOStub):
+            if not ref.path:
+                container[ref.base] = copy.deepcopy(value) if isinstance(value, (list, dict)) else value
+            else:
+                base_val[_canon(ref.path)] = value
+            return
         if not ref.path:
             container[ref.base] = copy.deepcopy(value) if isinstance(value, (list, dict)) else value
             return
