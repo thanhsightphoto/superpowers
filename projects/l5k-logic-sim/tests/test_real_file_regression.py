@@ -60,3 +60,13 @@ def test_aoi_chain_computes_on_real_file():
     # so it is non-zero regardless of machine state — proves binding ran on the real file.
     scaler_inst = engine.db.read(scope, "scaler_inst")
     assert scaler_inst["in_max"] == 100
+
+
+def test_instruction_pack_no_longer_unsupported_on_real_file():
+    engine = ScanEngine(parse_l5k(REAL))
+    pack = {"CLR", "ABS", "NEG", "MOD", "COP", "CTD", "TOF", "RTO"}
+    for prog in engine.project.controller.programs:
+        engine.scan(prog.name)  # must not raise
+        unsup = {d.split("unsupported instruction", 1)[1].split(" in ")[0].strip()
+                 for d in engine.diagnostics if "unsupported instruction" in d}
+        assert not (pack & unsup), f"{prog.name}: still unsupported {pack & unsup}"
