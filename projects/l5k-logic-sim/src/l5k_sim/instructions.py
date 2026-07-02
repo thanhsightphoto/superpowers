@@ -179,3 +179,36 @@ def _limit(engine, scope, instr, power_in):
     test = engine._operand(scope, instr.operands[1])
     hi = engine._operand(scope, instr.operands[2])
     return power_in and (lo <= test <= hi)
+
+
+@register("CLR")
+def _clr(engine, scope, instr, power_in):
+    if power_in:
+        engine.db.write(scope, instr.operands[0], 0)
+    return power_in
+
+
+@register("ABS")
+def _abs(engine, scope, instr, power_in):
+    if power_in:
+        engine.db.write(scope, instr.operands[1], abs(engine._operand(scope, instr.operands[0])))
+    return power_in
+
+
+@register("NEG")
+def _neg(engine, scope, instr, power_in):
+    if power_in:
+        engine.db.write(scope, instr.operands[1], -engine._operand(scope, instr.operands[0]))
+    return power_in
+
+
+@register("MOD")
+def _mod(engine, scope, instr, power_in):
+    if power_in:
+        a = engine._operand(scope, instr.operands[0])
+        b = engine._operand(scope, instr.operands[1])
+        if b == 0:
+            engine.diagnostics.append(f"MOD by zero in {scope}")
+            return power_in
+        engine.db.write(scope, instr.operands[2], a - b * int(a / b))
+    return power_in
